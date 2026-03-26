@@ -1,0 +1,13 @@
+langchain
+langchain-google-genai
+google-generativeai
+yfinance
+pandas
+pandas-ta
+fastapi
+uvicorn
+python-dotenv
+faiss-cpu
+sentence-transformers
+requests
+beautifulsoup4
