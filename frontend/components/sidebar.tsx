@@ -157,7 +157,7 @@ export function Sidebar({ className }: SidebarProps) {
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <DollarSign className="h-5 w-5 text-primary" />
-            <span>Adithya369 Finance</span>
+            <span>MarketValve</span>
           </Link>
         </div>
         <ScrollArea className="flex-1 py-2">
@@ -194,17 +194,6 @@ export function Sidebar({ className }: SidebarProps) {
             ))}
           </nav>
         </ScrollArea>
-        <div className="mt-auto border-t p-4">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="font-medium text-primary">AF</span>
-            </div>
-            <div>
-              <p className="font-medium">Adithya369 Finance</p>
-              <p className="text-xs text-muted-foreground">v1.0.0</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Overlay for mobile */}

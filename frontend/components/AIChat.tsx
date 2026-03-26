@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function AIChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +11,31 @@ export default function AIChat() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  function renderContent(text: string) {
+    const urlRegex = /(https?:\/\/[^\s)]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) =>
+      urlRegex.test(part) ? (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 underline break-all"
+        >
+          {part}
+        </a>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
+  }
 
   async function sendMessage() {
     if (!input.trim()) return;
@@ -45,33 +70,47 @@ export default function AIChat() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg text-2xl"
+        className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-colors"
       >
-        {isOpen ? "✕" : "🧠"}
+        {isOpen ? (
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+        )}
       </button>
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-96 h-[500px] bg-gray-900 rounded-xl border border-gray-700 shadow-2xl flex flex-col p-4">
-          <h2 className="text-white font-bold text-lg mb-3">
-            🧠 MarketValve AI
+        <div className="fixed bottom-24 right-6 z-50 w-[450px] h-[550px] bg-gray-900 rounded-xl border border-gray-700 shadow-2xl flex flex-col p-4">
+          
+          {/* Header */}
+          <h2 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            MarketValve AI
           </h2>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto space-y-3 mb-3">
+          <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-1">
             {messages.map((msg, i) => (
               <div
                 key={i}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-lg px-4 py-2 text-sm leading-relaxed ${
                     msg.role === "user"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-700 text-gray-100"
                   }`}
+                  style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
                 >
-                  {msg.content}
+                  {renderContent(msg.content)}
                 </div>
               </div>
             ))}
@@ -82,6 +121,7 @@ export default function AIChat() {
                 </div>
               </div>
             )}
+            <div ref={bottomRef} />
           </div>
 
           {/* Input */}
@@ -96,11 +136,12 @@ export default function AIChat() {
             <button
               onClick={sendMessage}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-colors"
             >
               Send
             </button>
           </div>
+
         </div>
       )}
     </>

@@ -15,14 +15,11 @@ import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, T
 import { ArrowDown, ArrowUp, TrendingDown, TrendingUp } from "lucide-react"
 import { fetchAllStocks } from "@/lib/stockData"
 
-// Indian market indices
-const marketOverviewData = [
-  { name: "Nifty 50", value: 22500, change: 0.45 },
-  { name: "Sensex", value: 74200, change: 0.38 },
-  { name: "Nifty Bank", value: 48100, change: 0.62 },
-  { name: "Nifty IT", value: 35800, change: -0.21 },
-]
-
+type MarketIndex = {
+  name: string
+  value: number
+  change: number
+}
 const portfolioPerformanceData = [
   { month: "Jan", value: 100 },
   { month: "Feb", value: 103 },
@@ -54,6 +51,12 @@ export function DashboardContent() {
   const [topPerformers, setTopPerformers] = useState<any[]>([])
   const [worstPerformers, setWorstPerformers] = useState<any[]>([])
   const [loadingStocks, setLoadingStocks] = useState(true)
+  const [marketIndices, setMarketIndices] = useState<MarketIndex[]>([
+    { name: "Nifty 50", value: 0, change: 0 },
+    { name: "Sensex", value: 0, change: 0 },
+    { name: "Nifty Bank", value: 0, change: 0 },
+    { name: "Nifty IT", value: 0, change: 0 },
+  ])
 
   useEffect(() => {
     async function loadStocks() {
@@ -70,7 +73,25 @@ export function DashboardContent() {
         setLoadingStocks(false)
       }
     }
+
+    async function loadIndices() {
+      try {
+        const res = await fetch("http://localhost:8000/indices")
+        const data = await res.json()
+        setMarketIndices(
+          (Array.isArray(data) ? data : []).map((item) => ({
+            name: String(item.name ?? ""),
+            value: Number(item.value ?? 0),
+            change: Number(item.change ?? 0),
+          }))
+        )
+      } catch (e) {
+        console.error("Failed to fetch indices", e)
+      }
+    }
+
     loadStocks()
+    loadIndices()
   }, [])
 
   return (
@@ -84,7 +105,7 @@ export function DashboardContent() {
 
       {/* Indian Market Indices */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {marketOverviewData.map((item, index) => (
+        {marketIndices.map((item, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{item.name}</CardTitle>

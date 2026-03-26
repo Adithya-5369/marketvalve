@@ -7,9 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Adithya369 Finance - Portfolio Dashboard",
-  description: "Track your investments and financial portfolio",
-    generator: 'v0.dev'
+  title: "MarketValve - AI Investor Copilot",
+  description: "A system that controls the flow of market information and filters noise into useful signals.",
 }
 
 export default function RootLayout({
