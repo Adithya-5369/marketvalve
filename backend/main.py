@@ -24,7 +24,7 @@ NIFTY_STOCKS = [
     {"ticker": "SBIN.NS", "name": "State Bank of India"},
     {"ticker": "BAJFINANCE.NS", "name": "Bajaj Finance"},
     {"ticker": "HINDUNILVR.NS", "name": "Hindustan Unilever"},
-    {"ticker": "TATAMOTORS.NS", "name": "Tata Motors"},
+    {"ticker": "TATAmotors.NS", "name": "Tata Motors"},
     {"ticker": "ADANIENT.NS", "name": "Adani Enterprises"},
     {"ticker": "ADANIPORTS.NS", "name": "Adani Ports"},
     {"ticker": "APOLLOHOSP.NS", "name": "Apollo Hospitals"},

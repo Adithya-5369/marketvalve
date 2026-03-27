@@ -1,5 +1,6 @@
 from langchain_core.tools import tool
 from rag.vector_store import get_vector_store
+from datetime import datetime, timedelta
 
 @tool
 def news_rag(query: str) -> str:
@@ -13,8 +14,25 @@ def news_rag(query: str) -> str:
         vs = get_vector_store()
         results = vs.similarity_search(query, k=5)
 
+        from datetime import datetime, timedelta
+        from email.utils import parsedate_to_datetime
+
+        cutoff = datetime.now(tz=datetime.now().astimezone().tzinfo) - timedelta(days=7)
+
+        def is_recent(doc):
+            try:
+                date_str = doc.metadata.get("date", "")
+                if not date_str:
+                    return True
+                parsed = parsedate_to_datetime(date_str)
+                return parsed > cutoff
+            except:
+                return True
+
+        results = [r for r in results if is_recent(r)]
+
         if not results:
-            return "No relevant news found for this query."
+            return "No relevant recent news found for this query."
 
         output = "Relevant ET Markets News:\n\n"
         for i, doc in enumerate(results, 1):
