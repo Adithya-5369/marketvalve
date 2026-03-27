@@ -90,8 +90,20 @@ export function DashboardContent() {
       }
     }
 
-    loadStocks()
-    loadIndices()
+    // 1. Create a wrapper function to fetch everything at once
+    const fetchMarketData = () => {
+      loadStocks()
+      loadIndices()
+    }
+
+    // 2. Fetch immediately when the page first loads
+    fetchMarketData()
+
+    // 3. Set up a continuous loop to fetch fresh data every 10 seconds (10000 ms)
+    const intervalId = setInterval(fetchMarketData, 10000)
+
+    // 4. Clean up the interval if the user navigates away from the dashboard
+    return () => clearInterval(intervalId)
   }, [])
 
   return (

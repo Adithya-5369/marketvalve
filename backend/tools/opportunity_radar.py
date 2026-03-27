@@ -6,10 +6,16 @@ import json, os
 
 CACHE_FILE = os.path.join(os.path.dirname(__file__), "radar_cache.json")
 
-ET_FEEDS = [
+NEWS_FEEDS = [
+    # --- ET Markets ---
     "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
     "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
     "https://economictimes.indiatimes.com/opinion/et-commentary/rssfeeds/897228639.cms",
+    
+    # --- Moneycontrol ---
+    "https://www.moneycontrol.com/rss/MCtopnews.xml",
+    "https://www.moneycontrol.com/rss/marketreports.xml",
+    "https://www.moneycontrol.com/rss/brokerageresearch.xml",
 ]
 
 SIGNAL_KEYWORDS = {
@@ -153,29 +159,39 @@ def save_cache(articles):
     except:
         pass
 
-def fetch_et_articles():
+def fetch_market_news():
     cached = load_cache()
     if cached:
         return cached
+        
     articles = []
-    for feed in ET_FEEDS:
+    
+    # Loop through BOTH Economic Times and Moneycontrol feeds
+    for feed in NEWS_FEEDS:
         try:
             res = requests.get(feed, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
             soup = BeautifulSoup(res.content, "xml")
-            for item in soup.find_all("item")[:20]:
+            
+            # Determine the source for the UI
+            source_name = "Moneycontrol" if "moneycontrol" in feed else "ET Markets"
+            
+            for item in soup.find_all("item")[:15]: # Limit to top 15 per feed to keep it fast
                 title   = item.find("title")
                 desc    = item.find("description")
                 link    = item.find("link")
                 date    = item.find("pubDate")
+                
                 if title:
                     articles.append({
                         "title": title.text.strip(),
                         "desc":  (desc.text.strip() if desc else "")[:300],
                         "link":  link.text.strip() if link else "",
                         "date":  date.text.strip() if date else "",
+                        "source": source_name # Save the source!
                     })
         except Exception as e:
             print(f"Feed error {feed}: {e}")
+            
     save_cache(articles)
     return articles
 
@@ -196,6 +212,7 @@ def detect_signals(articles, query_upper):
                 "desc":      art["desc"],
                 "link":      art["link"],
                 "date":      art["date"],
+                "source":    art.get("source", "ET Markets"),
                 "signals":   detected,
                 "sentiment": (
                     "🟢 Bullish" if any(s in BULLISH for s in detected)
@@ -224,7 +241,7 @@ def opportunity_radar(query: str) -> str:
         direct_result = fetch_nse_direct_deals(query_upper)
 
         # ── Secondary: ET Markets RSS signal detection ─────────────────────
-        articles = fetch_et_articles()
+        articles = fetch_market_news()
         signals  = detect_signals(articles, query_upper if is_specific else "")
 
         # ── Build combined output ──────────────────────────────────────────
@@ -258,7 +275,8 @@ def opportunity_radar(query: str) -> str:
             output += f"No signals found for {query_upper} today.\n"
             output += f"Scanned {len(articles)} ET Markets articles.\n"
 
-        output += "Source: NSE India + ET Markets (Live)"
+        source = s.get('source', 'Financial News') 
+        output += f"  Source: {source} | {s['date'][:16]}\n\n"
         return output
 
     except Exception as e:

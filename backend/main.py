@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from agents.market_agent import run_agent
 import yfinance as yf
+from tools.opportunity_radar import fetch_nse_direct_deals, fetch_market_news, detect_signals
+from datetime import datetime
+import math
+from curl_cffi import requests
 
 app = FastAPI(title="MarketValve API")
 
@@ -82,50 +86,141 @@ async def root():
 async def health():
     return {"status": "ok", "service": "MarketValve API"}
 
+def fetch_all_nifty50_live():
+    """Fetches all 50 Nifty stocks in a single request from the NSE Index Tracker."""
+    try:
+        session = requests.Session(impersonate="chrome")
+        headers = {
+            "accept": "application/json, text/javascript, */*; q=0.01",
+            "referer": "https://www.nseindia.com/market-data/live-equity-market",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        session.get("https://www.nseindia.com", headers=headers, timeout=10)
+        
+        url = "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050"
+        res = session.get(url, headers=headers, timeout=10)
+        
+        if res.status_code == 200:
+            payload = res.json()
+            raw_data = payload.get("data", [])
+            
+            results = []
+            for item in raw_data:
+                symbol = item.get("symbol")
+                if symbol == "NIFTY 50":
+                    continue
+                    
+                current_price = item.get("lastPrice", 0)
+                change_pct = item.get("pChange", 0)
+                
+                try:
+                    cp = float(change_pct)
+                except (ValueError, TypeError):
+                    cp = 0.0
+                
+                results.append({
+                    "ticker": symbol,
+                    "name": symbol,
+                    "price": str(current_price),
+                    "change": str(round(cp, 2)), 
+                    "positive": bool(cp >= 0)
+                })
+            
+            return results
+        else:
+            print(f"Failed to fetch Index Tracker. Status: {res.status_code}")
+            
+    except Exception as e:
+        print(f"Index Tracker fetch error: {e}")
+        
+    return []
+
 @app.get("/stocks")
 async def get_stocks():
-    results = []
-    for s in NIFTY_STOCKS:
-        try:
-            stock = yf.Ticker(s["ticker"])
-            hist = stock.history(period="2d")
-            if hist.empty:
-                continue
-            current = float(round(hist['Close'].iloc[-1], 2))
-            prev = float(round(hist['Close'].iloc[-2], 2)) if len(hist) > 1 else current
-            change = float(round(((current - prev) / prev) * 100, 2))
-            results.append({
-                "ticker": s["ticker"].replace(".NS", ""),
-                "name": s["name"],
-                "price": str(current),
-                "change": str(change),
-                "positive": bool(change >= 0)
-            })
-        except Exception as e:
-            print(f"Skipping {s['ticker']}: {e}")
-            continue
+    results = fetch_all_nifty50_live()
+    
+    if not results:
+        print("NSE API empty, falling back to empty list.")
+        return []
+        
     return results
+
+@app.get("/radar")
+async def get_radar(stock: str = "ALL"):
+    nse_data = fetch_nse_direct_deals(stock.upper())
+    articles = fetch_market_news()
+    signals = detect_signals(articles, "" if stock == "ALL" else stock.upper())
+    return {
+        "date": datetime.now().strftime("%d %b %Y"),
+        "nse_deals": nse_data,
+        "signals": signals,
+        "total_signals": len(signals)
+    }
+
+def fetch_all_indices_live():
+    """Fetches all major indices in a single request from the NSE."""
+    try:
+        from curl_cffi import requests 
+        
+        session = requests.Session(impersonate="chrome")
+        headers = {
+            "accept": "application/json, text/javascript, */*; q=0.01",
+            "referer": "https://www.nseindia.com/market-data/live-market-indices",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        session.get("https://www.nseindia.com", headers=headers, timeout=10)
+        
+        url = "https://www.nseindia.com/api/allIndices"
+        res = session.get(url, headers=headers, timeout=10)
+        
+        if res.status_code == 200:
+            data = res.json().get("data", [])
+            
+            target_indices = {
+                "NIFTY 50": "Nifty 50",
+                "NIFTY BANK": "Nifty Bank",
+                "NIFTY IT": "Nifty IT",
+                "NIFTY NEXT 50": "Nifty Next 50"
+            }
+            
+            results = []
+            for item in data:
+                nse_name = item.get("index")
+                
+                if nse_name in target_indices:
+                    current = item.get("last", 0)
+                    change_pct = item.get("percentChange", 0)
+                    
+                    try:
+                        cp = float(change_pct)
+                    except (ValueError, TypeError):
+                        cp = 0.0
+                    
+                    results.append({
+                        "name": target_indices[nse_name],
+                        "value": str(current),
+                        "change": str(round(cp, 2)), 
+                        "positive": bool(cp >= 0)
+                    })
+            
+            results.sort(key=lambda x: list(target_indices.values()).index(x["name"]))
+            return results
+            
+        else:
+            print(f"Failed to fetch Indices. Status: {res.status_code}")
+            
+    except Exception as e:
+        print(f"Indices fetch error: {e}")
+        
+    return []
+
+# --- Update your FastAPI route ---
 
 @app.get("/indices")
 async def get_indices():
-    results = []
-    for idx in INDICES:
-        try:
-            stock = yf.Ticker(idx["ticker"])
-            hist = stock.history(period="2d")
-            if hist.empty:
-                continue
-            current = float(round(hist['Close'].iloc[-1], 2))
-            prev = float(round(hist['Close'].iloc[-2], 2)) if len(hist) > 1 else current
-            change = float(round(((current - prev) / prev) * 100, 2))
-            results.append({
-                "name": idx["name"],
-                "value": current,
-                "change": change
-            })
-        except Exception as e:
-            print(f"Skipping {idx['ticker']}: {e}")
-            continue
+    results = fetch_all_indices_live()
     return results
 
 class Query(BaseModel):

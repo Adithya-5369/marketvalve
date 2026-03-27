@@ -1,69 +1,73 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
-// Mock alerts history data
-const alertsHistoryData = [
-  {
-    id: 1,
-    date: "2023-04-15T09:32:00",
-    ticker: "META",
-    type: "price",
-    message: "META dropped below $300.00",
-    status: "triggered",
-  },
-  {
-    id: 2,
-    date: "2023-04-12T14:15:00",
-    ticker: "AAPL",
-    type: "earnings",
-    message: "Apple Q2 earnings report released",
-    status: "delivered",
-  },
-  {
-    id: 3,
-    date: "2023-04-10T10:45:00",
-    ticker: "NVDA",
-    type: "news",
-    message: "NVIDIA announces new AI chip",
-    status: "delivered",
-  },
-  {
-    id: 4,
-    date: "2023-04-05T16:20:00",
-    ticker: "TSLA",
-    type: "price",
-    message: "TSLA rose above $240.00",
-    status: "triggered",
-  },
-  {
-    id: 5,
-    date: "2023-04-01T11:05:00",
-    ticker: "MSFT",
-    type: "analyst",
-    message: "Microsoft receives upgrade to Buy",
-    status: "delivered",
-  },
-]
+interface Signal {
+  title: string
+  desc: string
+  link: string
+  date: string
+  signals: string[]
+  sentiment: string
+  source?: string
+}
 
 export function AlertsHistory() {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-    }).format(date)
+  const [signals, setSignals] = useState<Signal[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+      async function fetchSignals(isBackground = false) {
+        // Only show the loading skeleton on the initial load
+        if (!isBackground) setLoading(true)
+        
+        try {
+          const res = await fetch("http://localhost:8000/radar?stock=ALL")
+          const data = await res.json()
+          setSignals(data.signals || [])
+        } catch {
+          // Only clear signals if it's not a background refresh
+          if (!isBackground) setSignals([])
+        } finally {
+          if (!isBackground) setLoading(false)
+        }
+      }
+
+      // 1. Initial fetch (shows loading state)
+      fetchSignals(false)
+
+      // 2. Silent background fetch every 60 seconds (60000 ms)
+      const intervalId = setInterval(() => fetchSignals(true), 60000)
+
+      // 3. Cleanup on unmount
+      return () => clearInterval(intervalId)
+    }, [])
+
+  function getSignalType(signals: string[]): string {
+    if (signals.includes("fii_buy") || signals.includes("fii_sell")) return "FII"
+    if (signals.includes("insider_buy") || signals.includes("insider_sell")) return "Insider"
+    if (signals.includes("bulk_deal")) return "Deal"
+    if (signals.includes("upgrade") || signals.includes("downgrade")) return "Analyst"
+    if (signals.includes("breakout") || signals.includes("breakdown")) return "Technical"
+    if (signals.includes("earnings")) return "Earnings"
+    return "News"
+  }
+
+  function getBadgeVariant(type: string): "default" | "secondary" | "destructive" | "outline" {
+    if (type === "FII" || type === "Deal") return "default"
+    if (type === "Earnings") return "secondary"
+    if (type === "Analyst") return "outline"
+    return "destructive"
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Alert History</CardTitle>
-        <CardDescription>Recent alerts and notifications</CardDescription>
+        <CardTitle>Signal History</CardTitle>
+        <CardDescription>Recent institutional signals detected today</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-hidden">
@@ -72,40 +76,72 @@ export function AlertsHistory() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Date & Time</TableHead>
-                  <TableHead>Ticker</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Headline</TableHead>
+                  <TableHead>Sentiment</TableHead>
+                  <TableHead>Source</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {alertsHistoryData.map((alert) => (
-                  <TableRow key={alert.id}>
-                    <TableCell>{formatDate(alert.date)}</TableCell>
-                    <TableCell className="font-medium">{alert.ticker}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          alert.type === "price"
-                            ? "default"
-                            : alert.type === "earnings"
-                              ? "secondary"
-                              : alert.type === "news"
-                                ? "outline"
-                                : "destructive"
-                        }
-                      >
-                        {alert.type.charAt(0).toUpperCase() + alert.type.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{alert.message}</TableCell>
-                    <TableCell>
-                      <Badge variant={alert.status === "triggered" ? "destructive" : "outline"}>
-                        {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                      </Badge>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground animate-pulse">
+                      Loading live signals...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : signals.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No signals detected today.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  signals.map((signal, i) => {
+                    const type = getSignalType(signal.signals)
+                    return (
+                      <TableRow key={i}>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {signal.date ? signal.date.slice(0, 16) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getBadgeVariant(type)}>{type}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[300px]">
+                          <div className="text-sm font-medium line-clamp-2">{signal.title}</div>
+                        </TableCell>
+                        <TableCell>
+                          <span className={
+                            signal.sentiment.includes("Bullish")
+                              ? "text-green-500 text-sm font-medium"
+                              : signal.sentiment.includes("Bearish")
+                              ? "text-red-500 text-sm font-medium"
+                              : "text-muted-foreground text-sm"
+                          }>
+                            {signal.sentiment.includes("Bullish") ? "🟢 Bullish"
+                              : signal.sentiment.includes("Bearish") ? "🔴 Bearish"
+                              : "⚪ Neutral"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {signal.link ? (
+                            <a
+                              href={signal.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline"
+                            >
+                              {signal.source || "ET Markets"} →
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              {signal.source || "ET Markets"}
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
