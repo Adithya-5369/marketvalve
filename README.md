@@ -1,8 +1,8 @@
 <p align="center">
-  <h1 align="center">🚀 MarketValve — AI Investor Copilot</h1>
+  <h1 align="center">🚀 MarketValve - AI Investor Copilot</h1>
   <p align="center">
     <strong>Next-Gen Financial Intelligence for Indian Retail Investors</strong><br/>
-    Built for the <strong>ET AI Hackathon 2026 — Problem Statement 6</strong>
+    Built for the <strong>ET Gen AI Hackathon 2026</strong>
   </p>
   <p align="center">
     <a href="https://marketvalve.vercel.app">🌐 Live Demo</a> •
@@ -14,7 +14,7 @@
 
 ## 📋 Problem Statement
 
-**PS6 — AI-Powered Financial Intelligence:** Build an AI system that provides data-driven, actionable financial intelligence for Indian retail investors, combining real-time market data, sentiment analysis, and portfolio-aware insights — going beyond what existing tools like ET Markets offer.
+**PS6 - AI for the Indian Investor:** India has 14 crore+ demat accounts, but most retail investors are flying blind — reacting to tips, missing filings, unable to read technicals, and managing mutual fund portfolios on gut feel. ET Markets has the data. Build the intelligence layer that turns data into actionable, money-making decisions.
 
 ---
 
@@ -23,12 +23,12 @@
 MarketValve is a **full-stack AI investor copilot** that combines:
 
 - 🤖 **Multi-step AI reasoning** powered by Sarvam AI (Indian LLM)
-- 📊 **Live NSE market data** — prices, indices, bulk/block deals, insider trades, corporate filings
+- 📊 **Live NSE market data** - prices, indices, bulk/block deals, insider trades, corporate filings
 - 🔍 **AI sentiment analysis** on ET Markets & Moneycontrol news articles
-- 📈 **Technical chart intelligence** — candlestick charts, RSI, MACD, Bollinger Bands, SMA crossovers
-- 💼 **Portfolio-aware AI** — personalized insights based on your holdings
-- 🔗 **Broker integration** — connect Angel One / Groww / Upstox to auto-import portfolio
-- 📋 **Source-cited responses** — every AI answer includes data provenance
+- 📈 **Technical chart intelligence** - candlestick charts, RSI, MACD, Bollinger Bands, SMA crossovers
+- 💼 **Portfolio-aware AI** - personalized insights based on your holdings
+- 🔗 **Broker integration** - connect Angel One / Groww / Upstox to auto-import portfolio
+- 📋 **Source-cited responses** - every AI answer includes data provenance
 
 > **Key differentiator:** Unlike generic chatbots, MarketValve chains multiple data tools in sequence (multi-step reasoning) to deliver comprehensive, portfolio-aware analysis with full source citations.
 
@@ -56,25 +56,25 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 
 ## ✨ Features
 
-### 🤖 AI Chat — Multi-Step Reasoning Engine
+### 🤖 AI Chat - Multi-Step Reasoning Engine
 - Conversational AI powered by **Sarvam 105B** (Indian LLM)
 - Chains up to **5 tools sequentially** for deep analysis
 - Portfolio-aware: references your holdings in responses
 - Multi-turn conversation with history context
 - Full-page AI chat + floating chat widget
 
-### 📊 Dashboard — Live Market Overview
+### 📊 Dashboard - Live Market Overview
 - Real-time **Nifty 50, Sensex, Bank Nifty, Nifty IT** indices
 - Top & worst performing NSE stocks (live)
 - Auto-refreshing every 10 seconds during market hours
 - Market open/closed status detection (IST-aware)
 
-### 🎯 Opportunity Radar — Deal Intelligence
-- **NSE bulk/block deals** — institutional buying & selling
-- **Insider trading disclosures** — SAST/PIT data from NSE
-- **Corporate filings** — board meetings, AGMs, announcements
-- **Quarterly results** — revenue, profit, EPS
-- **Management commentary** — investor presentations, earnings calls
+### 🎯 Opportunity Radar - Deal Intelligence
+- **NSE bulk/block deals** - institutional buying & selling
+- **Insider trading disclosures** - SAST/PIT data from NSE
+- **Corporate filings** - board meetings, AGMs, announcements
+- **Quarterly results** - revenue, profit, EPS
+- **Management commentary** - investor presentations, earnings calls
 - **AI sentiment signals** from ET Markets & Moneycontrol news
 
 ### 📈 Chart Pattern Intelligence
@@ -97,7 +97,7 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 
 ### 👁️ Watchlist & Price Alerts
 - Custom stock watchlist with live prices
-- Price alert system — set above/below targets
+- Price alert system - set above/below targets
 - Quick-add popular NSE stocks
 
 ---
@@ -182,8 +182,8 @@ marketvalve/
 ### Prerequisites
 - **Node.js** 18+ and npm
 - **Python** 3.11+
-- **Sarvam AI API Key** — [Get one free at sarvam.ai](https://www.sarvam.ai/)
-- **Firebase Project** — for authentication & Firestore
+- **Sarvam AI API Key** - [Get one free at sarvam.ai](https://www.sarvam.ai/)
+- **Firebase Project** - for authentication & Firestore
 
 ### 1. Clone the Repository
 ```bash
@@ -260,9 +260,9 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 | `GET` | `/indices` | Market indices (Nifty 50, Sensex, Bank Nifty, Nifty IT) |
 | `GET` | `/quote/{symbol}` | Single stock quote with price, change, volume, market cap |
 | `GET` | `/chart/{ticker}` | OHLCV + technical indicators (SMA, BB, RSI) |
-| `GET` | `/radar?stock=ALL` | Opportunity radar — deals, filings, insider trades, sentiment |
-| `GET` | `/scan?scope=nifty200` | Universe scanner — technical signal detection |
-| `POST` | `/chat` | AI chat — multi-step reasoning with portfolio context |
+| `GET` | `/radar?stock=ALL` | Opportunity radar - deals, filings, insider trades, sentiment |
+| `GET` | `/scan?scope=nifty200` | Universe scanner - technical signal detection |
+| `POST` | `/chat` | AI chat - multi-step reasoning with portfolio context |
 | `GET` | `/mf/search?q=` | Search mutual funds (40K+ schemes) |
 | `GET` | `/mf/nav/{code}` | Get mutual fund NAV |
 | `POST` | `/broker/connect` | Connect broker (Angel One / Groww / Upstox) |
@@ -271,7 +271,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 ---
 
-## 🧠 AI Agent — How It Works
+## 🧠 AI Agent - How It Works
 
 MarketValve's AI agent uses **LangChain tool calling** with Sarvam AI to perform multi-step analysis:
 
@@ -325,8 +325,8 @@ User Query: "Full analysis of RELIANCE"
 
 ## 👥 Team
 
-- **Adithya** — Full-Stack Development, AI Integration & Architecture
-- **Sasanka** — Testing & Ideation
+- **Adithya** - Full-Stack Development, AI Integration & Architecture
+- **Sasanka** - Testing & Ideation
 
 ---
 
@@ -341,10 +341,6 @@ User Query: "Full analysis of RELIANCE"
 
 ## 📄 License
 
-This project was built for the **ET AI Hackathon 2026**. All rights reserved.
+This project was built for the **ET Gen AI Hackathon 2026**. All rights reserved.
 
 ---
-
-<p align="center">
-  <strong>MarketValve — Smarter investing starts here. 🚀</strong>
-</p>
