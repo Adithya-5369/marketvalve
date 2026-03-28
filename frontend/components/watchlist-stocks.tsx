@@ -1,183 +1,201 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ArrowDown, ArrowUp, Bell, Plus, Search } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ArrowDown, ArrowUp, Plus, Search, Trash2, RefreshCw, TrendingUp } from "lucide-react"
+import { useAuth, userKey } from "@/components/auth-provider"
+import { saveUserData, loadUserData } from "@/lib/firestore"
 
-// Mock watchlist data with realistic stock information
-const watchlistData = [
-  {
-    ticker: "TSLA",
-    name: "Tesla, Inc.",
-    price: 248.42,
-    change: 5.63,
-    changePercent: 2.32,
-    volume: 28456789,
-    marketCap: 788.5,
-    pe: 70.2,
-    hasAlert: true,
-  },
-  {
-    ticker: "META",
-    name: "Meta Platforms, Inc.",
-    price: 325.76,
-    change: 7.89,
-    changePercent: 2.48,
-    volume: 15678234,
-    marketCap: 835.2,
-    pe: 28.4,
-    hasAlert: true,
-  },
-  {
-    ticker: "AMD",
-    name: "Advanced Micro Devices, Inc.",
-    price: 108.24,
-    change: -2.35,
-    changePercent: -2.13,
-    volume: 42567123,
-    marketCap: 174.8,
-    pe: 98.3,
-    hasAlert: false,
-  },
-  {
-    ticker: "DIS",
-    name: "The Walt Disney Company",
-    price: 89.67,
-    change: 0.23,
-    changePercent: 0.26,
-    volume: 8765432,
-    marketCap: 164.2,
-    pe: 19.8,
-    hasAlert: false,
-  },
-  {
-    ticker: "PYPL",
-    name: "PayPal Holdings, Inc.",
-    price: 62.38,
-    change: -1.42,
-    changePercent: -2.23,
-    volume: 12345678,
-    marketCap: 69.5,
-    pe: 17.6,
-    hasAlert: true,
-  },
-  {
-    ticker: "INTC",
-    name: "Intel Corporation",
-    price: 35.24,
-    change: -0.87,
-    changePercent: -2.41,
-    volume: 32456789,
-    marketCap: 148.3,
-    pe: 10.2,
-    hasAlert: false,
-  },
-]
+interface WatchlistItem {
+  symbol: string
+  price?: number
+  change?: number
+  change_pct?: number
+  volume?: number
+  market_cap?: number
+  loading?: boolean
+  error?: string
+}
+
+const POPULAR = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "WIPRO", "BAJFINANCE","TATAMOTORS","ADANIENT"]
 
 export function WatchlistStocks() {
+  const { user } = useAuth()
+  const [items, setItems] = useState<WatchlistItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [addSymbol, setAddSymbol] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 2,
-    }).format(amount)
-  }
+  const storageKey = user ? userKey(user.uid, "watchlist") : "mv_watchlist"
 
-  const formatMarketCap = (amount: number) => {
-    return `${amount.toFixed(1)}B`
-  }
+  // Load from Firestore (falls back to localStorage)
+  useEffect(() => {
+    if (!user) return
+    loadUserData(user.uid, "watchlist").then(data => {
+      if (data && Array.isArray(data)) {
+        setItems(data.map((s: any) => typeof s === 'string' ? { symbol: s } : s))
+      }
+    })
+  }, [user])
 
-  const formatVolume = (volume: number) => {
-    return new Intl.NumberFormat("en-US", {
-      notation: "compact",
-      maximumFractionDigits: 2,
-    }).format(volume)
-  }
-
-  const filteredStocks = watchlistData.filter((stock) => {
-    return (
-      stock.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stock.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Fetch live prices
+  const fetchPrices = useCallback(async (watchlist: WatchlistItem[]) => {
+    if (watchlist.length === 0) return
+    setRefreshing(true)
+    const updated = await Promise.all(
+      watchlist.map(async (item) => {
+        try {
+          const r = await fetch(`http://localhost:8000/quote/${item.symbol}`)
+          const d = await r.json()
+          if (d.status === "success") {
+            return { ...item, price: d.price, change: d.change, change_pct: d.change_pct, volume: d.volume, market_cap: d.market_cap, loading: false, error: undefined }
+          }
+          return { ...item, loading: false, error: d.message }
+        } catch {
+          return { ...item, loading: false, error: "Failed to fetch" }
+        }
+      })
     )
-  })
+    setItems(updated)
+    setRefreshing(false)
+  }, [])
+
+  // Auto-fetch on mount
+  useEffect(() => {
+    if (items.length > 0 && !items[0].price && !refreshing) {
+      fetchPrices(items)
+    }
+  }, [items.length])
+
+  function saveSymbols(newItems: WatchlistItem[]) {
+    setItems(newItems)
+    localStorage.setItem(storageKey, JSON.stringify(newItems.map(i => i.symbol)))
+  }
+
+  function addStock() {
+    const sym = addSymbol.trim().toUpperCase().replace(".NS", "")
+    if (!sym || items.find(i => i.symbol === sym)) return
+    const newItems = [...items, { symbol: sym, loading: true }]
+    saveSymbols(newItems)
+    setAddSymbol("")
+    // Fetch price for new stock
+    fetch(`http://localhost:8000/quote/${sym}`).then(r => r.json()).then(d => {
+      setItems(prev => prev.map(item =>
+        item.symbol === sym
+          ? { ...item, price: d.price, change: d.change, change_pct: d.change_pct, volume: d.volume, market_cap: d.market_cap, loading: false }
+          : item
+      ))
+    }).catch(() => {
+      setItems(prev => prev.map(item =>
+        item.symbol === sym ? { ...item, loading: false, error: "Failed" } : item
+      ))
+    })
+  }
+
+  function removeStock(symbol: string) {
+    saveSymbols(items.filter(i => i.symbol !== symbol))
+  }
+
+  const filtered = items.filter(i =>
+    i.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const formatVol = (v?: number) => v ? new Intl.NumberFormat("en-IN", { notation: "compact" }).format(v) : "—"
+  const formatMC = (v?: number) => v ? `₹${(v / 1e7).toFixed(0)}Cr` : "—"
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="space-y-1">
-          <CardTitle>Watchlist</CardTitle>
-          <CardDescription>Stocks you're monitoring</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" /> Watchlist
+          </CardTitle>
+          <CardDescription>Track NSE stocks with live prices • {items.length} stocks</CardDescription>
         </div>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Stock
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchPrices(items)} disabled={refreshing || items.length === 0}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
+        {/* Add stock + search */}
         <div className="flex items-center gap-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search watchlist..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <Input type="search" placeholder="Filter watchlist..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
+          <Input placeholder="Add symbol (e.g. TCS)" className="w-40" value={addSymbol}
+            onChange={e => setAddSymbol(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addStock()} />
+          <Button size="sm" onClick={addStock} disabled={!addSymbol.trim()}>
+            <Plus className="h-4 w-4 mr-1" /> Add
+          </Button>
         </div>
-        <div className="rounded-md border overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Ticker</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead className="text-right">Change</TableHead>
-                  <TableHead className="text-right">Volume</TableHead>
-                  <TableHead className="text-right">Market Cap</TableHead>
-                  <TableHead className="text-right">P/E</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStocks.map((stock) => (
-                  <TableRow key={stock.ticker}>
-                    <TableCell className="font-medium">{stock.ticker}</TableCell>
-                    <TableCell>{stock.name}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(stock.price)}</TableCell>
-                    <TableCell className={`text-right ${stock.change >= 0 ? "text-green-500" : "text-red-500"}`}>
-                      <div className="flex items-center justify-end">
-                        {stock.change >= 0 ? (
-                          <ArrowUp className="h-4 w-4 mr-1" />
-                        ) : (
-                          <ArrowDown className="h-4 w-4 mr-1" />
-                        )}
-                        {stock.change >= 0 ? "+" : ""}
-                        {stock.changePercent.toFixed(2)}%
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">{formatVolume(stock.volume)}</TableCell>
-                    <TableCell className="text-right">{formatMarketCap(stock.marketCap)}</TableCell>
-                    <TableCell className="text-right">{stock.pe.toFixed(1)}</TableCell>
-                    <TableCell>
-                      <Button variant={stock.hasAlert ? "default" : "ghost"} size="icon" className="h-8 w-8">
-                        <Bell className="h-4 w-4" />
-                        <span className="sr-only">Toggle alert</span>
-                      </Button>
-                    </TableCell>
+
+        {/* Quick add popular */}
+        {items.length === 0 && (
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground mb-2">Quick add popular NSE stocks:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR.map(s => (
+                <Button key={s} variant="outline" size="sm" className="text-xs h-7" onClick={() => { setAddSymbol(s); setTimeout(() => { const newItems = [...items, { symbol: s, loading: true }]; saveSymbols(newItems); fetch(`http://localhost:8000/quote/${s}`).then(r => r.json()).then(d => { setItems(prev => prev.map(item => item.symbol === s ? { ...item, price: d.price, change: d.change, change_pct: d.change_pct, volume: d.volume, market_cap: d.market_cap, loading: false } : item)) }) }, 0) }}>
+                  {s}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Table */}
+        {items.length > 0 && (
+          <div className="rounded-md border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Symbol</TableHead>
+                    <TableHead className="text-right">Price (₹)</TableHead>
+                    <TableHead className="text-right">Change</TableHead>
+                    <TableHead className="text-right">Volume</TableHead>
+                    <TableHead className="text-right">Market Cap</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((stock) => (
+                    <TableRow key={stock.symbol}>
+                      <TableCell className="font-bold">{stock.symbol}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {stock.loading ? <span className="text-muted-foreground text-xs">loading...</span>
+                          : stock.price ? `₹${stock.price.toLocaleString()}` : <span className="text-muted-foreground text-xs">{stock.error || "—"}</span>}
+                      </TableCell>
+                      <TableCell className={`text-right ${(stock.change || 0) >= 0 ? "text-green-500" : "text-red-500"}`}>
+                        {stock.price ? (
+                          <div className="flex items-center justify-end gap-1">
+                            {(stock.change || 0) >= 0 ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+                            {(stock.change || 0) >= 0 ? "+" : ""}{stock.change_pct?.toFixed(2)}%
+                          </div>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatVol(stock.volume)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatMC(stock.market_cap)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeStock(stock.symbol)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )

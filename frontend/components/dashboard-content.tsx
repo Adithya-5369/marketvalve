@@ -1,53 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PortfolioOverview } from "@/components/portfolio-overview"
-import { BudgetTracker } from "@/components/budget-tracker"
-import { ForecastSpending } from "@/components/forecast-spending"
-import { SectorAllocation } from "@/components/sector-allocation"
-import { PortfolioTrend } from "@/components/portfolio-trend"
-import { PortfolioHealth } from "@/components/portfolio-health"
-import { TransactionsPanel } from "@/components/transactions-panel"
-import { GoalTracker } from "@/components/goal-tracker"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { ArrowDown, ArrowUp, TrendingDown, TrendingUp } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Line, LineChart, ResponsiveContainer } from "recharts"
+import { ArrowDown, ArrowUp, TrendingDown, TrendingUp, Clock } from "lucide-react"
 import { fetchAllStocks } from "@/lib/stockData"
 
-type MarketIndex = {
-  name: string
-  value: number
-  change: number
-}
-const portfolioPerformanceData = [
-  { month: "Jan", value: 100 },
-  { month: "Feb", value: 103 },
-  { month: "Mar", value: 106 },
-  { month: "Apr", value: 109 },
-  { month: "May", value: 114 },
-  { month: "Jun", value: 118 },
-  { month: "Jul", value: 121 },
-  { month: "Aug", value: 125 },
-  { month: "Sep", value: 123 },
-  { month: "Oct", value: 127 },
-  { month: "Nov", value: 131 },
-  { month: "Dec", value: 135 },
-]
+type MarketIndex = { name: string; value: number; change: number }
 
 const generateMiniChartData = (baseValue: number, isPositive: boolean) => {
-  return Array(10)
-    .fill(0)
-    .map((_, i) => {
-      const randomFactor = isPositive
-        ? 0.95 + (i / 10) * 0.1 + Math.random() * 0.02
-        : 1.05 - (i / 10) * 0.1 - Math.random() * 0.02
-      return { name: i, value: baseValue * randomFactor }
-    })
+  return Array(10).fill(0).map((_, i) => {
+    const rf = isPositive ? 0.95 + (i / 10) * 0.1 + Math.random() * 0.02 : 1.05 - (i / 10) * 0.1 - Math.random() * 0.02
+    return { name: i, value: baseValue * rf }
+  })
 }
 
 export function DashboardContent() {
-  const [activeTab, setActiveTab] = useState("overview")
   const [topPerformers, setTopPerformers] = useState<any[]>([])
   const [worstPerformers, setWorstPerformers] = useState<any[]>([])
   const [loadingStocks, setLoadingStocks] = useState(true)
@@ -57,21 +26,17 @@ export function DashboardContent() {
     { name: "Nifty Bank", value: 0, change: 0 },
     { name: "Nifty IT", value: 0, change: 0 },
   ])
+  const [marketStatus, setMarketStatus] = useState<"Live" | "Closed">("Closed")
 
   useEffect(() => {
     async function loadStocks() {
       try {
         const stocks = await fetchAllStocks()
-        const sorted = [...stocks].sort(
-          (a, b) => parseFloat(b.change) - parseFloat(a.change)
-        )
-        setTopPerformers(sorted.slice(0, 4))
-        setWorstPerformers(sorted.slice(-4).reverse())
-      } catch (e) {
-        console.error("Failed to fetch stocks", e)
-      } finally {
-        setLoadingStocks(false)
-      }
+        const sorted = [...stocks].sort((a, b) => parseFloat(b.change) - parseFloat(a.change))
+        setTopPerformers(sorted.slice(0, 5))
+        setWorstPerformers(sorted.slice(-5).reverse())
+      } catch (e) { console.error("Failed to fetch stocks", e) }
+      finally { setLoadingStocks(false) }
     }
 
     async function loadIndices() {
@@ -85,33 +50,47 @@ export function DashboardContent() {
             change: Number(item.change ?? 0),
           }))
         )
-      } catch (e) {
-        console.error("Failed to fetch indices", e)
-      }
+      } catch (e) { console.error("Failed to fetch indices", e) }
     }
 
-    // 1. Create a wrapper function to fetch everything at once
-    const fetchMarketData = () => {
-      loadStocks()
-      loadIndices()
-    }
-
-    // 2. Fetch immediately when the page first loads
+    const fetchMarketData = () => { loadStocks(); loadIndices() }
     fetchMarketData()
 
-    // 3. Set up a continuous loop to fetch fresh data every 10 seconds (10000 ms)
-    const intervalId = setInterval(fetchMarketData, 10000)
-
-    // 4. Clean up the interval if the user navigates away from the dashboard
+    // Determine market status
+    const updateMarketStatus = () => {
+      const now = new Date()
+      // IST offset is +5:30. Current UTC hours + 5.5 = IST hours
+      const estTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000))
+      const hours = estTime.getUTCHours()
+      const minutes = estTime.getUTCMinutes()
+      const day = estTime.getUTCDay()
+      
+      const isWeekend = day === 0 || day === 6 // Saturday or Sunday
+      const isLiveHours = (hours > 9 || (hours === 9 && minutes >= 15)) && (hours < 15 || (hours === 15 && minutes <= 30))
+      
+      setMarketStatus(isWeekend || !isLiveHours ? "Closed" : "Live")
+    }
+    
+    updateMarketStatus()
+    const intervalId = setInterval(() => {
+      fetchMarketData()
+      updateMarketStatus()
+    }, 10000)
     return () => clearInterval(intervalId)
   }, [])
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <Badge variant={marketStatus === "Live" ? "default" : "secondary"} className="h-6 gap-1 px-2.5 outline-none font-medium">
+            <Clock className="h-3 w-3" />
+            Market {marketStatus}
+          </Badge>
+        </div>
         <p className="text-muted-foreground">
-          Welcome back! Here's an overview of your Indian market portfolio.
+          Welcome back! Here's your live Indian market overview • powered by NSE India.
         </p>
       </div>
 
@@ -137,16 +116,8 @@ export function DashboardContent() {
               </div>
               <div className="h-[50px] w-full mt-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={generateMiniChartData(item.value, item.change >= 0)}
-                  >
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke={item.change >= 0 ? "#4ade80" : "#f87171"}
-                      strokeWidth={2}
-                      dot={false}
-                    />
+                  <LineChart data={generateMiniChartData(item.value, item.change >= 0)}>
+                    <Line type="monotone" dataKey="value" stroke={item.change >= 0 ? "#4ade80" : "#f87171"} strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -160,7 +131,7 @@ export function DashboardContent() {
         <Card>
           <CardHeader>
             <CardTitle>Top Performers</CardTitle>
-            <CardDescription>Best performing NSE stocks today</CardDescription>
+            <CardDescription>Best performing NSE stocks today (Live)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -190,7 +161,7 @@ export function DashboardContent() {
         <Card>
           <CardHeader>
             <CardTitle>Worst Performers</CardTitle>
-            <CardDescription>Worst performing NSE stocks today</CardDescription>
+            <CardDescription>Worst performing NSE stocks today (Live)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -218,131 +189,6 @@ export function DashboardContent() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Portfolio Performance Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Portfolio Performance</CardTitle>
-          <CardDescription>
-            Year-to-date performance (indexed to 100)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={portfolioPerformanceData}
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient
-                    id="colorPortfolio"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--primary))"
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--primary))"
-                      stopOpacity={0.1}
-                    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis dataKey="month" />
-                <YAxis domain={[95, 140]} />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="rounded-lg border bg-background p-2 shadow-sm">
-                          <div className="grid gap-2">
-                            <div className="font-medium">{label}</div>
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                Value
-                              </span>
-                              <span className="text-xs font-medium">
-                                {payload[0].value}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    }
-                    return null
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="hsl(var(--primary))"
-                  fillOpacity={1}
-                  fill="url(#colorPortfolio)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Tabs
-        defaultValue="overview"
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-4"
-      >
-        <TabsList className="grid w-full grid-cols-5 md:w-auto">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="budget">Budget</TabsTrigger>
-          <TabsTrigger value="forecast">Forecast</TabsTrigger>
-          <TabsTrigger value="allocation">Allocation</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <PortfolioOverview />
-            <BudgetTracker />
-            <ForecastSpending />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <SectorAllocation />
-            <PortfolioTrend />
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <PortfolioHealth />
-            <TransactionsPanel />
-            <GoalTracker />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="budget" className="space-y-4">
-          <BudgetTracker fullWidth />
-        </TabsContent>
-
-        <TabsContent value="forecast" className="space-y-4">
-          <ForecastSpending fullWidth />
-        </TabsContent>
-
-        <TabsContent value="allocation" className="space-y-4">
-          <SectorAllocation fullWidth />
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-4">
-          <PortfolioTrend fullWidth />
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

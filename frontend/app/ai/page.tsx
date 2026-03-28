@@ -1,10 +1,10 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { DashboardContent } from "@/components/dashboard-content"
+import { AIFullPage } from "@/components/pages/ai-chat-page"
 
-export default function Home() {
+export default function AIPage() {
   return (
     <DashboardLayout>
-      <DashboardContent />
+      <AIFullPage />
     </DashboardLayout>
   )
 }

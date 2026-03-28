@@ -118,7 +118,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
             </Badge>
           </CardTitle>
           <CardDescription>
-            Live NSE bulk/block deals + institutional signals
+            NSE bulk/block deals + Sarvam AI sentiment from ET Markets & Moneycontrol
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            Market Signals ({radarData?.total_signals || 0})
+            AI Sentiment Signals ({radarData?.total_signals || 0})
           </button>
         </div>
 
@@ -232,7 +232,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
           <div className="space-y-2">
             {(radarData?.signals || []).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
-                No market signals detected in today's ET Markets news.
+                No AI signals detected in today's ET Markets & Moneycontrol news.
               </div>
             ) : (
               (radarData?.signals || []).map((signal, i) => (

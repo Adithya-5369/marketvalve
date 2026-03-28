@@ -6,7 +6,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  BarChart3,
   Briefcase,
   CreditCard,
   DollarSign,
@@ -14,16 +13,22 @@ import {
   LineChart,
   PieChart,
   Settings,
-  Bell,
-  Target,
+  BellRing,
+  Eye,
   Menu,
   X,
+  CandlestickChart,
+  Radar,
+  Newspaper,
+  ScanLine,
+  MessageSquare,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
@@ -70,6 +75,41 @@ export function Sidebar({ className }: SidebarProps) {
       icon: Home,
     },
     {
+      title: "MarketValve AI",
+      href: "/ai",
+      icon: MessageSquare,
+    },
+    {
+      title: "Chart Analysis",
+      href: "/performance",
+      icon: CandlestickChart,
+    },
+    {
+      title: "Universe Scanner",
+      href: "/scanner",
+      icon: ScanLine,
+    },
+    {
+      title: "Opportunity Radar",
+      href: "/radar",
+      icon: Radar,
+    },
+    {
+      title: "Market Signals",
+      href: "/alerts",
+      icon: Newspaper,
+    },
+    {
+      title: "Watchlist",
+      href: "/watchlist",
+      icon: Eye,
+    },
+    {
+      title: "Price Alerts",
+      href: "/price-alerts",
+      icon: BellRing,
+    },
+    {
       title: "Portfolio",
       href: "/portfolio",
       icon: Briefcase,
@@ -83,55 +123,21 @@ export function Sidebar({ className }: SidebarProps) {
           href: "/portfolio/stocks",
         },
         {
-          title: "ETFs",
-          href: "/portfolio/etfs",
-        },
-        {
-          title: "Crypto",
-          href: "/portfolio/crypto",
+          title: "Mutual Funds",
+          href: "/portfolio/mutual-funds",
         },
       ],
-    },
-    {
-      title: "Transactions",
-      href: "/transactions",
-      icon: CreditCard,
-    },
-    {
-      title: "Budget",
-      href: "/budget",
-      icon: DollarSign,
-    },
-    {
-      title: "Forecast",
-      href: "/forecast",
-      icon: LineChart,
-    },
-    {
-      title: "Sectors",
-      href: "/sectors",
-      icon: PieChart,
-    },
-    {
-      title: "Performance",
-      href: "/performance",
-      icon: BarChart3,
-    },
-    {
-      title: "Watchlist",
-      href: "/watchlist",
-      icon: Target,
-    },
-    {
-      title: "Alerts",
-      href: "/alerts",
-      icon: Bell,
     },
     {
       title: "Settings",
       href: "/settings",
       icon: Settings,
     },
+    // ── Hidden from sidebar (pages still accessible via URL) ──
+    // { title: "Sectors", href: "/sectors", icon: PieChart },
+    // { title: "Transactions", href: "/transactions", icon: CreditCard },
+    // { title: "Budget", href: "/budget", icon: DollarSign },
+    // { title: "Forecast", href: "/forecast", icon: LineChart },
   ]
 
   return (
@@ -194,6 +200,8 @@ export function Sidebar({ className }: SidebarProps) {
             ))}
           </nav>
         </ScrollArea>
+        {/* User Profile Footer */}
+        <UserProfileFooter />
       </div>
 
       {/* Overlay for mobile */}
@@ -205,4 +213,34 @@ export function Sidebar({ className }: SidebarProps) {
       )}
     </>
   )
+}
+
+function UserProfileFooter() {
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { user, logout } = require("@/components/auth-provider").useAuth()
+    if (!user) return null
+    return (
+      <div className="border-t px-3 py-3">
+        <div className="flex items-center gap-2">
+          {user.photoURL ? (
+            <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full" />
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+              {user.displayName?.[0] || "U"}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-medium truncate">{user.displayName || "User"}</div>
+            <div className="text-[10px] text-muted-foreground truncate">{user.email}</div>
+          </div>
+          <button onClick={logout} className="text-muted-foreground hover:text-destructive p-1.5 rounded-md hover:bg-muted/80 transition-colors" title="Sign out">
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    )
+  } catch {
+    return null
+  }
 }

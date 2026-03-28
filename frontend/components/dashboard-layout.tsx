@@ -4,6 +4,7 @@ import type React from "react"
 
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
+import AIChat from "@/components/AIChat"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -19,6 +20,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="container mx-auto p-4 md:p-6">{children}</div>
         </main>
       </div>
+      <AIChat />
     </div>
   )
 }

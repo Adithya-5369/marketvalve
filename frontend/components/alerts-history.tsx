@@ -66,8 +66,8 @@ export function AlertsHistory() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Signal History</CardTitle>
-        <CardDescription>Recent institutional signals detected today</CardDescription>
+        <CardTitle>AI Signal History</CardTitle>
+        <CardDescription>AI-detected sentiment signals from ET Markets & Moneycontrol</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-hidden">
