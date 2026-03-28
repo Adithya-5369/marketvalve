@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/components/auth-provider"
 import { saveUserData, loadUserData } from "@/lib/firestore"
 import { API_BASE_URL } from "@/lib/api"
+import { MarketValveLogo } from "@/components/logo"
 
 const SUGGESTIONS = [
   { text: "Full analysis of RELIANCE", emoji: "📊" },
@@ -192,9 +193,7 @@ export function AIFullPage() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-3 border-b border-border shrink-0 bg-background">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center text-primary">
-              <Brain className="w-5 h-5" />
-            </div>
+            <MarketValveLogo className="w-7 h-7 shrink-0" />
             <div>
               <h1 className="text-lg font-bold tracking-tight flex items-center gap-2">
                 MarketValve AI
@@ -213,9 +212,7 @@ export function AIFullPage() {
         <div className="flex-1 overflow-y-auto chat-scroll px-6 py-5">
           {isEmpty ? (
             <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
-              <div className="w-12 h-12 flex items-center justify-center mb-4 text-primary opacity-80">
-                <Brain className="w-8 h-8" />
-              </div>
+              <MarketValveLogo className="w-14 h-14 mb-4 drop-shadow-sm" />
               <h2 className="text-2xl font-bold mb-2">What can I help you with?</h2>
               <p className="text-muted-foreground text-sm text-center mb-8 max-w-md">
                 Multi-step stock analysis, mutual fund tracking, portfolio intelligence, and market signals • all with cited sources.
@@ -240,11 +237,13 @@ export function AIFullPage() {
               {messages.map((msg, i) => (
                 <div key={i} className="msg-enter">
                   <div className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                      msg.role === "assistant" ? "bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm shadow-primary/20" : "bg-muted border border-border"
-                    }`}>
-                      {msg.role === "assistant" ? <Brain className="w-4 h-4" /> : <span className="text-xs font-semibold">U</span>}
-                    </div>
+                    {msg.role === "assistant" ? (
+                      <MarketValveLogo className="w-8 h-8 shrink-0 mt-0.5" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 bg-muted border border-border">
+                        <span className="text-xs font-semibold">U</span>
+                      </div>
+                    )}
                     <div className={`max-w-[80%] space-y-1 ${msg.role === "user" ? "items-end" : ""}`}>
                       <div className={`text-[10px] font-medium px-1 ${msg.role === "user" ? "text-right" : ""} text-muted-foreground`}>
                         {msg.role === "assistant" ? "MarketValve AI" : "You"}{msg.tools_used && msg.tools_used > 0 ? ` • ${msg.tools_used} tools used` : ""}
@@ -286,9 +285,7 @@ export function AIFullPage() {
               ))}
               {loading && (
                 <div className="msg-enter flex gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground shadow-sm shadow-primary/20">
-                    <Brain className="w-4 h-4 animate-pulse" />
-                  </div>
+                  <MarketValveLogo className="w-8 h-8 shrink-0" />
                   <div className="space-y-1">
                     <div className="text-[10px] font-medium text-muted-foreground px-1">MarketValve AI</div>
                     <div className="rounded-2xl px-5 py-4 bg-muted/60 border border-border/60 rounded-tl-sm">

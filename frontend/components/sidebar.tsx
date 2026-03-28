@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { MarketValveLogo } from "@/components/logo"
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> { }
 
@@ -81,7 +82,7 @@ export function Sidebar({ className }: SidebarProps) {
     },
     {
       title: "Chart Analysis",
-      href: "/performance",
+      href: "/chart-analysis",
       icon: CandlestickChart,
     },
     {
@@ -96,7 +97,7 @@ export function Sidebar({ className }: SidebarProps) {
     },
     {
       title: "Market Signals",
-      href: "/alerts",
+      href: "/market-signals",
       icon: Newspaper,
     },
     {
@@ -162,8 +163,11 @@ export function Sidebar({ className }: SidebarProps) {
       >
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <DollarSign className="h-5 w-5 text-primary" />
-            <span>MarketValve</span>
+            <MarketValveLogo className="h-6 w-6" />
+            <span className="text-lg tracking-tight">
+              <span className="font-bold">MARKET</span>
+              <span className="font-normal">VALVE</span>
+            </span>
           </Link>
         </div>
         <ScrollArea className="flex-1 py-2">

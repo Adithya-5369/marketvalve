@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { usePathname } from "next/navigation"
 
 import { Header } from "@/components/header"
 import { Sidebar } from "@/components/sidebar"
@@ -11,6 +12,8 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const pathname = usePathname()
+  
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -20,7 +23,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="container mx-auto p-4 md:p-6">{children}</div>
         </main>
       </div>
-      <AIChat />
+      {pathname !== "/ai" && <AIChat />}
     </div>
   )
 }

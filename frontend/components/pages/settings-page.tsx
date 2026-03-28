@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Settings, User, Moon, Sun, Monitor, Shield, LogOut } from "lucide-react"
+import { Settings, User, Moon, Sun, Monitor, Shield, LogOut, Edit2 } from "lucide-react"
 import { useTheme } from "next-themes"
+import { updateProfile } from "firebase/auth"
 
 let useAuth: any = () => ({ user: null, logout: () => {} })
 try { useAuth = require("@/components/auth-provider").useAuth } catch {}
@@ -14,6 +15,9 @@ try { useAuth = require("@/components/auth-provider").useAuth } catch {}
 export function SettingsPage() {
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [isUpdating, setIsUpdating] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -39,7 +43,57 @@ export function SettingsPage() {
                 </div>
               )}
               <div>
-                <div className="font-semibold text-lg">{user?.displayName || "User"}</div>
+                {isEditingName ? (
+                  <div className="flex items-center gap-2 mb-1">
+                    <Input 
+                      value={newName} 
+                      onChange={e => setNewName(e.target.value)} 
+                      className="h-7 text-sm w-40" 
+                      placeholder="Display Name"
+                      disabled={isUpdating}
+                    />
+                    <Button 
+                      size="sm" 
+                      onClick={async () => {
+                        if (!newName.trim() || newName === user?.displayName) {
+                          setIsEditingName(false)
+                          return
+                        }
+                        setIsUpdating(true)
+                        try {
+                          await updateProfile(user, { displayName: newName })
+                          window.location.reload()
+                        } catch (e: any) {
+                          alert("Failed to update name: " + e.message)
+                        } finally {
+                          setIsUpdating(false)
+                        }
+                      }}
+                      disabled={isUpdating}
+                      className="h-7 px-2 border border-border"
+                    >
+                      {isUpdating ? "..." : "Save"}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditingName(false)} className="h-7 px-2" disabled={isUpdating}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="font-semibold text-lg">{user?.displayName || "User"}</div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0 -ml-1 text-muted-foreground hover:text-foreground" 
+                      onClick={() => {
+                        setNewName(user?.displayName || "")
+                        setIsEditingName(true)
+                      }}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
                 <div className="text-sm text-muted-foreground">{user?.email || "Not signed in"}</div>
                 <Badge variant="outline" className="mt-1 text-[10px]">
                   <Shield className="h-2.5 w-2.5 mr-1" /> Authenticated

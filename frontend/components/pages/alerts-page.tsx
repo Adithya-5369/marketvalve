@@ -88,7 +88,7 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="gap-1">
                 Filtered: {stockFilter}
-                <button onClick={() => { setStockFilter(""); router.push("/alerts") }} className="ml-1 hover:text-destructive">
+                <button onClick={() => { setStockFilter(""); router.push("/market-signals") }} className="ml-1 hover:text-destructive">
                   <X className="h-3 w-3" />
                 </button>
               </Badge>

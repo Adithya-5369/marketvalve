@@ -1,6 +1,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/api";
+import { MarketValveLogo } from "@/components/logo";
+import { Maximize2, Minimize2 } from "lucide-react";
 
 const SUGGESTIONS = [
   "Give me a full analysis of RELIANCE",
@@ -20,6 +22,7 @@ interface Message {
 
 export default function AIChat() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -193,34 +196,32 @@ export default function AIChat() {
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 bg-primary text-primary-foreground"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 bg-background border border-border"
         aria-label="Toggle MarketValve AI"
       >
         {hasNew && !isOpen && (
           <span className="absolute top-1 right-1 w-3 h-3 bg-destructive rounded-full border-2 border-background" />
         )}
         {isOpen ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
+          <MarketValveLogo className="w-8 h-8" />
         )}
       </button>
 
 
       {isOpen && (
-        <div className="chat-panel fixed bottom-24 right-6 z-50 flex flex-col rounded-2xl overflow-hidden w-[440px] h-[600px] bg-background border border-border shadow-2xl">
+        <div className={`chat-panel fixed z-50 flex flex-col rounded-2xl overflow-hidden bg-background border border-border shadow-2xl transition-all duration-300 ease-in-out ${
+          isExpanded 
+            ? "bottom-4 right-4 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] md:bottom-12 md:right-12 md:w-[700px] md:h-[calc(100vh-6rem)]" 
+            : "bottom-24 right-6 w-[440px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-8rem)]"
+        }`}>
 
           <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border bg-muted/50">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary text-primary-foreground">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
+              <MarketValveLogo className="w-8 h-8 shrink-0" />
               <div>
                 <div className="text-foreground font-semibold text-sm leading-tight">
                   MarketValve AI
@@ -234,10 +235,17 @@ export default function AIChat() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded hover:bg-accent hidden sm:block"
+                title={isExpanded ? "Collapse" : "Expand"}
+              >
+                {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
   
               <button
                 onClick={() => setShowPortfolio(!showPortfolio)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${showPortfolio ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
+                className={`text-xs px-2 py-1.5 rounded transition-colors ${showPortfolio ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
               >
                 💼 Portfolio
               </button>
@@ -250,7 +258,7 @@ export default function AIChat() {
                     },
                   ])
                 }
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-accent"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded hover:bg-accent"
               >
                 Clear
               </button>
@@ -288,11 +296,7 @@ export default function AIChat() {
               <div key={i}>
                 <div className={`msg-bubble flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "assistant" && (
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mr-2 mt-0.5 bg-primary text-primary-foreground">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                    </div>
+                    <MarketValveLogo className="w-6 h-6 rounded-md shrink-0 mr-2 mt-0.5" />
                   )}
                   <div
                     className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed break-words ${
@@ -336,11 +340,7 @@ export default function AIChat() {
 
             {loading && (
               <div className="msg-bubble flex justify-start">
-                <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mr-2 mt-0.5 bg-primary text-primary-foreground">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
+                <MarketValveLogo className="w-6 h-6 rounded-md shrink-0 mr-2 mt-0.5" />
                 <div className="rounded-xl px-4 py-3 bg-muted border border-border rounded-bl-sm">
                   <div className="text-[10px] text-muted-foreground mb-1">Analyzing with multi-step reasoning...</div>
                   <span className="chat-dot" />

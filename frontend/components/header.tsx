@@ -63,7 +63,7 @@ export function Header() {
         icon: <BarChart2 className="h-3.5 w-3.5 text-blue-500" />,
         label: `Chart Analysis`,
         sub: `Technical indicators, patterns & AI analysis for ${ticker}`,
-        action: () => { setQuery(""); setShowResults(false); router.push(`/performance?stock=${ticker}`) }
+        action: () => { setQuery(""); setShowResults(false); router.push(`/chart-analysis?stock=${ticker}`) }
       },
       {
         icon: <Radar className="h-3.5 w-3.5 text-amber-500" />,
@@ -75,7 +75,7 @@ export function Header() {
         icon: <Newspaper className="h-3.5 w-3.5 text-purple-500" />,
         label: `Market Signals`,
         sub: `AI sentiment & news signals for ${ticker}`,
-        action: () => { setQuery(""); setShowResults(false); router.push(`/alerts?stock=${ticker}`) }
+        action: () => { setQuery(""); setShowResults(false); router.push(`/market-signals?stock=${ticker}`) }
       },
       {
         icon: <MessageSquare className="h-3.5 w-3.5 text-green-500" />,

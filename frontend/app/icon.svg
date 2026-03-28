@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    .gear { stroke: #1e293b; }
+    .gear-fill { fill: #1e293b; }
+    @media (prefers-color-scheme: dark) {
+      .gear { stroke: #f1f5f9; }
+      .gear-fill { fill: #f1f5f9; }
+    }
+  </style>
+
+  <!-- Dark blue gear background depending on browser theme -->
+  <g class="gear" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Outer dashed circle to resemble rotation arrows -->
+    <circle cx="50" cy="50" r="42" stroke-dasharray="30 20" fill="none" />
+    
+    <!-- Gear teeth/spokes -->
+    <path d="M50 8 v20 m0 44 v20 M8 50 h20 m44 0 h20" stroke-width="8" />
+    <path d="M20 20 l14 14 m32 32 l14 14 M20 80 l14 -14 m32 -32 l14 -14" stroke-width="8" />
+    
+    <!-- Inner solid gear center -->
+    <circle cx="50" cy="50" r="18" fill="none" stroke-width="6" />
+    <circle cx="50" cy="50" r="6" class="gear-fill" stroke="none" />
+  </g>
+
+  <!-- Teal ascending arrow/trend line -->
+  <g stroke="#00b08b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 65 L40 40 L55 55 L85 20" fill="none" />
+    <polygon points="85,10 95,20 75,20" fill="#00b08b" stroke="none" transform="rotate(25 85 20)" />
+  </g>
+  
+  <!-- Light green inner glow/accent on arrow -->
+  <path d="M15 65 L40 40 L55 55 L85 20" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

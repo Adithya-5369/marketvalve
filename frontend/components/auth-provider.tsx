@@ -1,10 +1,10 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
-import { User, signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth"
+import { User, signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
 import { auth, googleProvider } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
-import { Brain } from "lucide-react"
+import { MarketValveLogo } from "@/components/logo"
 
 interface AuthContextType {
   user: User | null
@@ -13,6 +13,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, pass: string) => Promise<void>
   signUpWithEmail: (email: string, pass: string) => Promise<void>
   logout: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   signInWithEmail: async () => {},
   signUpWithEmail: async () => {},
   logout: async () => {},
+  resetPassword: async () => {},
 })
 
 export const useAuth = () => useContext(AuthContext)
@@ -59,12 +61,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth)
   }
 
+  async function resetPassword(email: string) {
+    try { 
+      await sendPasswordResetEmail(auth, email) 
+      alert("Password reset email sent! Check your inbox.")
+    } catch (error: any) { 
+      alert("Reset failed: " + error.message) 
+    }
+  }
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center animate-pulse">
-            <Brain className="w-7 h-7 text-primary-foreground" />
+          <div className="flex items-center justify-center animate-pulse mb-3">
+            <MarketValveLogo className="w-12 h-12" />
           </div>
           <p className="text-sm text-muted-foreground">Loading MarketValve...</p>
         </div>
@@ -73,17 +84,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    return <LoginScreen onGoogleLogin={signInWithGoogle} onEmailLogin={signInWithEmail} onEmailSignUp={signUpWithEmail} />
+    return <LoginScreen onGoogleLogin={signInWithGoogle} onEmailLogin={signInWithEmail} onEmailSignUp={signUpWithEmail} onResetPassword={resetPassword} />
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-function LoginScreen({ onGoogleLogin, onEmailLogin, onEmailSignUp }: { onGoogleLogin: () => void, onEmailLogin: (e:string, p:string) => void, onEmailSignUp: (e:string, p:string) => void }) {
+function LoginScreen({ onGoogleLogin, onEmailLogin, onEmailSignUp, onResetPassword }: { onGoogleLogin: () => void, onEmailLogin: (e:string, p:string) => void, onEmailSignUp: (e:string, p:string) => void, onResetPassword: (e:string) => void }) {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -106,11 +117,14 @@ function LoginScreen({ onGoogleLogin, onEmailLogin, onEmailSignUp }: { onGoogleL
       `}</style>
       <div className="login-card w-full max-w-sm mx-4">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-xl shadow-primary/25 mx-auto mb-4">
-            <Brain className="w-9 h-9 text-primary-foreground" />
+          <div className="flex items-center justify-center mx-auto mb-4">
+            <MarketValveLogo className="w-16 h-16 drop-shadow-md" />
           </div>
-          <h1 className="text-2xl font-bold">MarketValve</h1>
-          <p className="text-sm text-muted-foreground mt-1">AI-powered intelligence for Indian investors</p>
+          <h1 className="text-2xl tracking-tight">
+            <span className="font-bold">MARKET</span>
+            <span className="font-normal">VALVE</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">AI Investor Copilot</p>
         </div>
 
         <div className="space-y-4">
@@ -132,6 +146,22 @@ function LoginScreen({ onGoogleLogin, onEmailLogin, onEmailSignUp }: { onGoogleL
               required
               minLength={6}
             />
+            
+            {!isSignUp && (
+              <div className="flex justify-end pt-1">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    if (!email) alert("Please enter your email address first.")
+                    else onResetPassword(email)
+                  }} 
+                  className="text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
             <Button type="submit" className="w-full h-11 rounded-xl" disabled={loading}>
               {loading ? "Please wait..." : (isSignUp ? "Sign Up" : "Sign In")}
             </Button>
