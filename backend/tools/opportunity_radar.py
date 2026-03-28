@@ -24,7 +24,7 @@ NEWS_FEEDS = [
     "https://www.moneycontrol.com/rss/brokerageresearch.xml",
 ]
 
-# ─── AI Sentiment Analysis ────────────────────────────────────────────────────
+
 
 def _get_sentiment_llm():
     return ChatOpenAI(
@@ -105,7 +105,7 @@ def _analyze_sentiment_batch(headlines: list[str]) -> list[dict]:
         print(f"Sentiment analysis error: {e}")
         return []
 
-# ─── NSE API ──────────────────────────────────────────────────────────────────
+
 
 def get_nse_session():
     session = requests.Session()
@@ -130,7 +130,7 @@ def fetch_nse_deals(deal_type: str = "bulk") -> list:
         params = {"dealtype": "bulk_deals" if deal_type == "bulk" else "block_deals"}
         res = session.get(url, params=params, timeout=15)
         data = res.json()
-        # NSE returns BULK_DEALS_DATA or BLOCK_DEALS_DATA as keys
+        # NSE returns data under different keys depending on deal type
         if deal_type == "bulk":
             return data.get("BULK_DEALS_DATA", data.get("data", []))
         else:
@@ -179,7 +179,7 @@ def fetch_nse_direct_deals(query_upper: str = "") -> str:
         symbol   = d.get("symbol", "N/A")
         client   = d.get("clientName", "Unknown")
         qty      = d.get("qty", d.get("quantity", "N/A"))
-        price    = d.get("watp", d.get("price", "N/A"))       # watp = weighted avg trade price
+        price    = d.get("watp", d.get("price", "N/A"))
         buy_sell = d.get("buySell", d.get("buy_sell", "N/A"))
         date     = d.get("date", datetime.now().strftime("%d-%b-%Y"))
 
@@ -201,7 +201,7 @@ def fetch_nse_direct_deals(query_upper: str = "") -> str:
     output += "\nSource: NSE India (nseindia.com)"
     return output
 
-# ─── RSS Cache ────────────────────────────────────────────────────────────────
+
 
 def load_cache():
     try:
@@ -231,16 +231,14 @@ def fetch_market_news():
         
     articles = []
     
-    # Loop through BOTH Economic Times and Moneycontrol feeds
     for feed in NEWS_FEEDS:
         try:
             res = requests.get(feed, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
             soup = BeautifulSoup(res.content, "xml")
             
-            # Determine the source for the UI
             source_name = "Moneycontrol" if "moneycontrol" in feed else "ET Markets"
             
-            for item in soup.find_all("item")[:15]: # Limit to top 15 per feed to keep it fast
+            for item in soup.find_all("item")[:15]:
                 title   = item.find("title")
                 desc    = item.find("description")
                 link    = item.find("link")
@@ -252,7 +250,7 @@ def fetch_market_news():
                         "desc":  (desc.text.strip() if desc else "")[:300],
                         "link":  link.text.strip() if link else "",
                         "date":  date.text.strip() if date else "",
-                        "source": source_name # Save the source!
+                        "source": source_name
                     })
         except Exception as e:
             print(f"Feed error {feed}: {e}")
@@ -262,7 +260,6 @@ def fetch_market_news():
 
 def detect_signals(articles, query_upper):
     """AI-powered sentiment analysis using Groq LLM instead of keyword matching."""
-    # Filter articles by stock if specific query
     filtered = []
     for art in articles:
         text = (art["title"] + " " + art["desc"]).lower()
@@ -274,7 +271,6 @@ def detect_signals(articles, query_upper):
     if not filtered:
         return []
 
-    # Check sentiment cache first
     cache = _load_sentiment_cache()
     uncached_articles = []
     uncached_indices = []
@@ -288,7 +284,6 @@ def detect_signals(articles, query_upper):
             uncached_articles.append(art)
             uncached_indices.append(i)
 
-    # Batch analyze only uncached headlines (max 15 at a time to stay within limits)
     new_results = {}
     batch_size = 15
     for batch_start in range(0, len(uncached_articles), batch_size):
@@ -301,14 +296,11 @@ def detect_signals(articles, query_upper):
             if 0 <= idx < len(batch):
                 global_idx = uncached_indices[batch_start + idx]
                 new_results[global_idx] = result
-                # Cache it
                 cache_key = batch[idx]["title"][:100]
                 cache[cache_key] = result
 
-    # Save updated cache
     _save_sentiment_cache(cache)
 
-    # Merge cached + new results and build signals
     all_results = {**cached_results, **new_results}
     signals = []
 
@@ -322,7 +314,6 @@ def detect_signals(articles, query_upper):
         signal_type = result.get("signal_type", "General")
         reason = result.get("reason", "")
 
-        # Skip low-confidence neutral signals
         if sentiment_label == "Neutral" and confidence < 5:
             continue
 
@@ -344,11 +335,10 @@ def detect_signals(articles, query_upper):
             "reason":      reason,
         })
 
-    # Sort by confidence (highest first)
     signals.sort(key=lambda x: x.get("confidence", 0), reverse=True)
     return signals
 
-# ─── NSE Corporate Announcements / Filings ────────────────────────────────────
+
 
 def fetch_corporate_filings(query_upper: str = "") -> list:
     """Fetch corporate announcements from NSE (board meetings, AGMs, acquisitions, etc.)."""
@@ -362,7 +352,6 @@ def fetch_corporate_filings(query_upper: str = "") -> list:
         data = res.json()
         filings = []
         items = data if isinstance(data, list) else data.get("data", data.get("searchresult", []))
-        # High-impact keywords to prioritize
         high_impact = [
             "board meeting", "quarterly", "results", "dividend", "bonus",
             "acquisition", "merger", "buyback", "rights issue", "split",
@@ -374,8 +363,6 @@ def fetch_corporate_filings(query_upper: str = "") -> list:
             symbol = item.get("symbol", item.get("sm_name", ""))
             an_date = item.get("an_dt", item.get("date", ""))
             category = item.get("attchmntFile", item.get("category", ""))
-            
-            # Check if high-impact
             subj_lower = subject.lower()
             is_high_impact = any(kw in subj_lower for kw in high_impact)
             
@@ -388,7 +375,6 @@ def fetch_corporate_filings(query_upper: str = "") -> list:
                     "high_impact": is_high_impact,
                 })
         
-        # Sort: high-impact first
         filings.sort(key=lambda x: x.get("high_impact", False), reverse=True)
         return filings[:20]
     except Exception as e:
@@ -410,7 +396,7 @@ def format_filings_text(filings: list) -> str:
     return output
 
 
-# ─── Management Commentary Detection ──────────────────────────────────────────
+
 
 MGMT_KEYWORDS = [
     "investor presentation", "investor update", "management discussion",
@@ -445,12 +431,10 @@ def fetch_management_commentary(query_upper: str = "") -> list:
             an_date = item.get("an_dt", item.get("date", ""))
             subj_lower = subject.lower()
 
-            # Only keep management commentary related filings
             matched_keywords = [kw for kw in MGMT_KEYWORDS if kw in subj_lower]
             if not matched_keywords:
                 continue
 
-            # Classify the type of commentary
             if any(k in subj_lower for k in ["investor presentation", "analyst meet", "investor meet", "corporate presentation"]):
                 commentary_type = "Investor Presentation"
             elif any(k in subj_lower for k in ["con-call", "concall", "conference call", "earnings call"]):
@@ -498,7 +482,7 @@ def format_commentary_text(commentary: list) -> str:
     output += f"Total commentary found: {len(commentary)}\nSource: NSE India Corporate Filings\n"
     return output
 
-# ─── NSE Insider Trading / SAST (PIT) ─────────────────────────────────────────
+
 
 def fetch_insider_trades(query_upper: str = "") -> list:
     """Fetch insider/promoter trading data from NSE PIT regulations."""
@@ -554,7 +538,7 @@ def format_insider_text(trades: list) -> str:
     output += f"Total insider trades found: {len(trades)}\nSource: NSE India (SAST/PIT)\n"
     return output
 
-# ─── NSE Quarterly Results ────────────────────────────────────────────────────
+
 
 def fetch_quarterly_results(query_upper: str = "") -> list:
     """Fetch latest quarterly financial results from NSE."""
@@ -624,26 +608,19 @@ def opportunity_radar(query: str) -> str:
         query_upper = query.upper().strip().replace(".NS", "")
         is_specific = query_upper not in ["ALL", "MARKET", "TODAY", ""]
 
-        # ── 1. NSE bulk/block deal API ────────────────────────────────────
         direct_result = fetch_nse_direct_deals(query_upper)
 
-        # ── 2. ET Markets & Moneycontrol RSS signal detection ─────────────
         articles = fetch_market_news()
         signals  = detect_signals(articles, query_upper if is_specific else "")
 
-        # ── 3. Corporate filings / announcements ─────────────────────────
         filings = fetch_corporate_filings(query_upper)
 
-        # ── 4. Insider / promoter trades ──────────────────────────────────
         insider = fetch_insider_trades(query_upper)
 
-        # ── 5. Quarterly financial results ────────────────────────────────
         results = fetch_quarterly_results(query_upper)
 
-        # ── 6. Management commentary from NSE filings ─────────────────────
         commentary = fetch_management_commentary(query_upper)
 
-        # ── Build combined output ─────────────────────────────────────────
         output = f"[Opportunity Radar — {datetime.now().strftime('%d %b %Y')}]\n"
         if is_specific:
             output += f"Stock: {query_upper}\n\n"
@@ -653,19 +630,14 @@ def opportunity_radar(query: str) -> str:
         else:
             output += "NSE deal data unavailable at this time.\n\n"
 
-        # Corporate filings
         output += format_filings_text(filings)
 
-        # Management commentary
         output += format_commentary_text(commentary)
 
-        # Insider trades
         output += format_insider_text(insider)
 
-        # Quarterly results
         output += format_results_text(results)
 
-        # AI Sentiment signals
         if signals:
             bullish = sum(1 for s in signals if "Bullish" in s["sentiment"])
             bearish = sum(1 for s in signals if "Bearish" in s["sentiment"])

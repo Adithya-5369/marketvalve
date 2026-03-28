@@ -22,10 +22,8 @@ tools = [price_fetch, news_rag, opportunity_radar, chart_pattern, get_top_mutual
 tools_map = {t.name: t for t in tools}
 llm_with_tools = llm.bind_tools(tools)
 
-# ── Conversation Memory (in-memory, per session) ─────────────────────────────
-# Stores last N turns for multi-turn context
 conversation_history: list = []
-MAX_HISTORY = 10  # Keep last 10 exchanges
+MAX_HISTORY = 10
 
 
 SYSTEM_PROMPT = """You are MarketValve AI — a next-generation financial intelligence assistant
@@ -83,7 +81,6 @@ def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
     Run the MarketValve agent with conversation history and portfolio context.
     Returns a dict with 'response', 'sources', and 'reasoning_steps'.
     """
-    # Build portfolio context
     portfolio_ctx = ""
     if portfolio and len(portfolio) > 0:
         holdings = []
@@ -98,7 +95,6 @@ def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
         portfolio_ctx = f"\n\nUser's Portfolio:\n" + "\n".join(holdings)
         portfolio_ctx += "\n\nIMPORTANT: Reference the user's holdings when relevant. Flag any signals, deals, or news that affect stocks in their portfolio."
 
-    # Build conversation context from history
     history_msgs = []
     if history and len(history) > 0:
         for entry in history[-MAX_HISTORY:]:
@@ -112,17 +108,13 @@ def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
     ]
-    # Add conversation history for multi-turn context
     messages.extend(history_msgs)
-    # Add current query with portfolio context
     messages.append(HumanMessage(content=query + portfolio_ctx))
 
-    # Track sources and reasoning steps
     sources_used = set()
     reasoning_steps = []
     tool_calls_made = 0
 
-    # Multi-step tool execution loop (up to 5 steps for complex queries)
     for step in range(5):
         response = llm_with_tools.invoke(messages)
         messages.append(response)
@@ -135,7 +127,6 @@ def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
             tool_calls_made += 1
 
             if tool_name in tools_map:
-                # Track reasoning
                 step_desc = f"Step {tool_calls_made}: "
                 if tool_name == "price_fetch":
                     step_desc += f"Fetching live price data"
@@ -160,7 +151,6 @@ def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
                     tool_call_id=tool_call["id"]
                 ))
 
-    # Final synthesis prompt
     sources_list = ", ".join(sources_used) if sources_used else "General knowledge"
     
     synthesis = f"""Now give a complete, self-contained answer using the tool results above.
@@ -178,7 +168,6 @@ IMPORTANT REQUIREMENTS:
     messages.append(HumanMessage(content=synthesis))
     final = llm_with_tools.invoke(messages)
 
-    # Clean markdown artifacts
     content = final.content
     content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
     content = re.sub(r'^#{1,4}\s+', '', content, flags=re.MULTILINE)

@@ -84,7 +84,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
         
         setRadarData(data)
         setDeals(parseDealLines(data.nse_deals))
-        setLastRefresh(new Date()) // This will update the "Updated at XX:XX" timestamp!
+    setLastRefresh(new Date())
       } catch (e) {
         if (!isBackground) setError("Unable to fetch live data. Backend may be offline.")
       } finally {
@@ -93,13 +93,10 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
     }
 
     useEffect(() => {
-      // 1. Initial fetch
       fetchRadar(false)
 
-      // 2. Silent background fetch every 60 seconds (60000 ms)
       const intervalId = setInterval(() => fetchRadar(true), 60000)
 
-      // 3. Cleanup
       return () => clearInterval(intervalId)
     }, [])
 
@@ -133,7 +130,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Summary Cards */}
+
         <div className="grid grid-cols-4 gap-3">
           <div className="rounded-lg border p-3 text-center">
             <div className="text-2xl font-bold text-green-500">{buyDeals.length}</div>
@@ -153,7 +150,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
           </div>
         </div>
 
-        {/* Tabs */}
+
         <div className="flex gap-2 border-b">
           <button
             onClick={() => setActiveTab("deals")}
@@ -177,7 +174,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
           </button>
         </div>
 
-        {/* Content */}
+
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (

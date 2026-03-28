@@ -30,7 +30,7 @@ export function WatchlistAlerts() {
 
   const storageKey = user ? userKey(user.uid, "price_alerts") : "mv_price_alerts"
 
-  // Load from Firestore
+
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "price_alerts").then(data => {
@@ -83,7 +83,7 @@ export function WatchlistAlerts() {
     setChecking(false)
   }
 
-  // Auto-check on mount
+
   useEffect(() => {
     if (alerts.length > 0 && !alerts[0].currentPrice) checkAlerts()
   }, [alerts.length])
@@ -108,7 +108,7 @@ export function WatchlistAlerts() {
         </Button>
       </CardHeader>
       <CardContent>
-        {/* Create alert */}
+
         <div className="flex items-center gap-2 mb-4 p-3 rounded-lg border border-dashed border-border">
           <Input placeholder="Symbol" className="w-28" value={newSymbol} onChange={e => setNewSymbol(e.target.value)} />
           <select
@@ -124,7 +124,7 @@ export function WatchlistAlerts() {
           </Button>
         </div>
 
-        {/* Alert list */}
+
         {alerts.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />

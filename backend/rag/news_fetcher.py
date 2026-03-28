@@ -2,24 +2,13 @@ import requests
 from bs4 import BeautifulSoup
 
 ET_RSS_FEEDS = [
-    # Markets (your existing)
     "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
     "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
-
-    # ET Default & Top Stories
     "https://economictimes.indiatimes.com/rssfeedsdefault.cms",
     "https://economictimes.indiatimes.com/rss.cms",
-
-    # Banking & Finance
     "https://economictimes.indiatimes.com/industry/banking/finance/banking/rssfeeds/13358259.cms",
-
-    # Economy
     "https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms",
-
-    # IPO
     "https://economictimes.indiatimes.com/markets/ipos/fpos/rssfeeds/44747124.cms",
-
-    # Mutual Funds
     "https://economictimes.indiatimes.com/mf/rssfeeds/13808662.cms",
 ]
 

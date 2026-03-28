@@ -21,7 +21,7 @@ import {
   YAxis,
 } from "recharts"
 
-// Transaction summary data
+
 const transactionSummaryData = [
   { month: "Jan", buy: 3500, sell: 1200 },
   { month: "Feb", buy: 4200, sell: 2100 },
@@ -31,20 +31,20 @@ const transactionSummaryData = [
   { month: "Jun", buy: 5500, sell: 2800 },
 ]
 
-// Transaction type data
+
 const transactionTypeData = [
   { name: "Buy", value: 65, color: "#4ade80" },
   { name: "Sell", value: 35, color: "#f87171" },
 ]
 
-// Asset class distribution data
+
 const assetClassData = [
   { name: "Stocks", value: 68, color: "#8884d8" },
   { name: "ETFs", value: 22, color: "#82ca9d" },
   { name: "Crypto", value: 10, color: "#ffc658" },
 ]
 
-// Monthly transaction volume data
+
 const monthlyVolumeData = [
   { name: "Jan", volume: 4700 },
   { name: "Feb", volume: 6300 },

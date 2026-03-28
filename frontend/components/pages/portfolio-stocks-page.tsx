@@ -25,7 +25,7 @@ export function PortfolioStocksPage() {
 
   const stockKey = user ? userKey(user.uid, "portfolio_stocks") : "mv_portfolio_stocks"
 
-  // Load from Firestore
+
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "portfolio_stocks").then(data => {

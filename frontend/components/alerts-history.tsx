@@ -22,7 +22,6 @@ export function AlertsHistory() {
 
   useEffect(() => {
       async function fetchSignals(isBackground = false) {
-        // Only show the loading skeleton on the initial load
         if (!isBackground) setLoading(true)
         
         try {
@@ -30,20 +29,16 @@ export function AlertsHistory() {
           const data = await res.json()
           setSignals(data.signals || [])
         } catch {
-          // Only clear signals if it's not a background refresh
           if (!isBackground) setSignals([])
         } finally {
           if (!isBackground) setLoading(false)
         }
       }
 
-      // 1. Initial fetch (shows loading state)
       fetchSignals(false)
 
-      // 2. Silent background fetch every 60 seconds (60000 ms)
       const intervalId = setInterval(() => fetchSignals(true), 60000)
 
-      // 3. Cleanup on unmount
       return () => clearInterval(intervalId)
     }, [])
 

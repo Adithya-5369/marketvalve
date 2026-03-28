@@ -26,14 +26,14 @@ export function PortfolioPage() {
   const { user } = useAuth()
   const [tab, setTab] = useState<"stocks" | "mf">("stocks")
 
-  // Stocks
+
   const [stocks, setStocks] = useState<StockHolding[]>([])
   const [newSym, setNewSym] = useState("")
   const [newQty, setNewQty] = useState("")
   const [newAvg, setNewAvg] = useState("")
   const [refreshing, setRefreshing] = useState(false)
 
-  // MF
+
   const [mfs, setMfs] = useState<MFHolding[]>([])
   const [mfSearch, setMfSearch] = useState("")
   const [mfResults, setMfResults] = useState<any[]>([])
@@ -44,7 +44,7 @@ export function PortfolioPage() {
   const stockKey = user ? userKey(user.uid, "portfolio_stocks") : "mv_portfolio_stocks"
   const mfKey = user ? userKey(user.uid, "portfolio_mf") : "mv_portfolio_mf"
 
-  // Load from Firestore
+
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "portfolio_stocks").then(data => {
@@ -64,14 +64,14 @@ export function PortfolioPage() {
     if (user) saveUserData(user.uid, "portfolio_mf", m)
   }
 
-  // Add stock
+
   function addStock() {
     const sym = newSym.trim().toUpperCase().replace(".NS", "")
     if (!sym) return
     const updated = [...stocks, { symbol: sym, qty: parseInt(newQty) || 0, avg_price: parseFloat(newAvg) || 0 }]
     saveStocks(updated)
     setNewSym(""); setNewQty(""); setNewAvg("")
-    // Fetch price
+    // Fetch live price after adding
     fetchStockPrices(updated)
   }
 
@@ -100,7 +100,7 @@ export function PortfolioPage() {
     setRefreshing(false)
   }
 
-  // MF search
+
   async function searchMF() {
     if (!mfSearch.trim()) return
     setMfSearching(true)
@@ -147,11 +147,11 @@ export function PortfolioPage() {
     setRefreshing(false)
   }
 
-  // Auto-fetch on mount
+
   useEffect(() => { if (stocks.length > 0 && !stocks[0].ltp) fetchStockPrices() }, [stocks.length])
   useEffect(() => { if (mfs.length > 0 && !mfs[0].nav) fetchMFNavs() }, [mfs.length])
 
-  // Summary calc
+
   const stockInvested = stocks.reduce((s, h) => s + h.qty * h.avg_price, 0)
   const stockCurrent = stocks.reduce((s, h) => s + h.qty * (h.ltp || h.avg_price), 0)
   const stockPnl = stockCurrent - stockInvested

@@ -26,7 +26,6 @@ def safe_int(x):
 
 app = FastAPI(title="MarketValve API")
 
-# CORS must be added FIRST before any routes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,7 +34,6 @@ app.add_middleware(
 )
 
 
-# ── Quick Quote (single stock) ────────────────────────────────────────────────
 
 @app.get("/quote/{symbol}")
 async def get_quote(symbol: str):
@@ -219,7 +217,7 @@ async def get_radar(stock: str = "ALL"):
 def fetch_all_indices_live():
     """Fetches all major indices in a single request from the NSE."""
     try:
-        from curl_cffi import requests 
+        from curl_cffi import requests
         
         session = requests.Session(impersonate="chrome")
         headers = {
@@ -320,7 +318,6 @@ async def get_chart_data(ticker: str, period: str = "3mo"):
     except Exception as e:
         return {"error": str(e)}
 
-# --- Update your FastAPI route ---
 
 @app.get("/indices")
 async def get_indices():
@@ -338,7 +335,7 @@ async def chat(query: Query):
     return result
 
 
-# ── NSE Universe Scanner ──────────────────────────────────────────────────────
+
 
 def fetch_nse_stock_list(index_name: str = "NIFTY 200") -> list:
     """Fetch stock symbols from any NSE index dynamically."""
@@ -388,7 +385,7 @@ async def scan_nse_universe(scope: str = "nifty200"):
     # Fetch stock list from NSE API
     tickers = fetch_nse_stock_list(index_name)
     
-    # Fallback to hardcoded Nifty 50 if NSE API fails
+
     if not tickers:
         print(f"NSE API failed for {index_name}, falling back to hardcoded Nifty 50")
         tickers = [s["ticker"].replace(".NS", "") for s in NIFTY_STOCKS]
@@ -493,7 +490,6 @@ async def scan_nse_universe(scope: str = "nifty200"):
     }
 
 
-# ── Broker Integration (Angel One SmartAPI) ──────────────────────────────────
 
 from tools.broker_integration import (
     connect_angel_one, connect_with_totp_secret,
@@ -535,7 +531,6 @@ async def broker_status():
     return {"connected": is_connected()}
 
 
-# ── Mutual Funds (free mfapi.in) ─────────────────────────────────────────────
 
 from tools.mutual_funds import search_mutual_funds, get_fund_nav, analyze_fund_portfolio
 

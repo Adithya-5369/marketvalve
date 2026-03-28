@@ -33,7 +33,7 @@ export function WatchlistStocks() {
 
   const storageKey = user ? userKey(user.uid, "watchlist") : "mv_watchlist"
 
-  // Load from Firestore (falls back to localStorage)
+  // Load watchlist from Firestore
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "watchlist").then(data => {
@@ -43,7 +43,7 @@ export function WatchlistStocks() {
     })
   }, [user])
 
-  // Fetch live prices
+
   const fetchPrices = useCallback(async (watchlist: WatchlistItem[]) => {
     if (watchlist.length === 0) return
     setRefreshing(true)
@@ -65,7 +65,7 @@ export function WatchlistStocks() {
     setRefreshing(false)
   }, [])
 
-  // Auto-fetch on mount
+
   useEffect(() => {
     if (items.length > 0 && !items[0].price && !refreshing) {
       fetchPrices(items)
@@ -83,7 +83,6 @@ export function WatchlistStocks() {
     const newItems = [...items, { symbol: sym, loading: true }]
     saveSymbols(newItems)
     setAddSymbol("")
-    // Fetch price for new stock
     fetch(`${API_BASE_URL}/quote/${sym}`).then(r => r.json()).then(d => {
       setItems(prev => prev.map(item =>
         item.symbol === sym
@@ -124,7 +123,7 @@ export function WatchlistStocks() {
         </div>
       </CardHeader>
       <CardContent>
-        {/* Add stock + search */}
+
         <div className="flex items-center gap-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -138,7 +137,7 @@ export function WatchlistStocks() {
           </Button>
         </div>
 
-        {/* Quick add popular */}
+
         {items.length === 0 && (
           <div className="mb-4">
             <p className="text-sm text-muted-foreground mb-2">Quick add popular NSE stocks:</p>
@@ -152,7 +151,7 @@ export function WatchlistStocks() {
           </div>
         )}
 
-        {/* Table */}
+
         {items.length > 0 && (
           <div className="rounded-md border overflow-hidden">
             <div className="overflow-x-auto">

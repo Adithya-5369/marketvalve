@@ -1,2 +1,350 @@
-# marketvalve
-MarketValve - AI Investor Copilot (Building for ET Gen AI Hackathon)
+<p align="center">
+  <h1 align="center">🚀 MarketValve — AI Investor Copilot</h1>
+  <p align="center">
+    <strong>Next-Gen Financial Intelligence for Indian Retail Investors</strong><br/>
+    Built for the <strong>ET AI Hackathon 2026 — Problem Statement 6</strong>
+  </p>
+  <p align="center">
+    <a href="https://marketvalve.vercel.app">🌐 Live Demo</a> •
+    <a href="https://adithya5369-marketvalve-api-prod.hf.space/docs">📡 API Docs</a>
+  </p>
+</p>
+
+---
+
+## 📋 Problem Statement
+
+**PS6 — AI-Powered Financial Intelligence:** Build an AI system that provides data-driven, actionable financial intelligence for Indian retail investors, combining real-time market data, sentiment analysis, and portfolio-aware insights — going beyond what existing tools like ET Markets offer.
+
+---
+
+## 🎯 What is MarketValve?
+
+MarketValve is a **full-stack AI investor copilot** that combines:
+
+- 🤖 **Multi-step AI reasoning** powered by Sarvam AI (Indian LLM)
+- 📊 **Live NSE market data** — prices, indices, bulk/block deals, insider trades, corporate filings
+- 🔍 **AI sentiment analysis** on ET Markets & Moneycontrol news articles
+- 📈 **Technical chart intelligence** — candlestick charts, RSI, MACD, Bollinger Bands, SMA crossovers
+- 💼 **Portfolio-aware AI** — personalized insights based on your holdings
+- 🔗 **Broker integration** — connect Angel One / Groww / Upstox to auto-import portfolio
+- 📋 **Source-cited responses** — every AI answer includes data provenance
+
+> **Key differentiator:** Unlike generic chatbots, MarketValve chains multiple data tools in sequence (multi-step reasoning) to deliver comprehensive, portfolio-aware analysis with full source citations.
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   FRONTEND (Next.js)                │
+│  Vercel • React 19 • TailwindCSS • shadcn/ui       │
+│  Firebase Auth • Firestore (user data persistence)  │
+├─────────────────────────────────────────────────────┤
+│                      ↕ REST API                     │
+├─────────────────────────────────────────────────────┤
+│                  BACKEND (FastAPI)                   │
+│  Hugging Face Spaces • Python 3.11 • Uvicorn        │
+├───────────┬───────────┬───────────┬─────────────────┤
+│ Sarvam AI │ NSE India │  Yahoo    │  ET Markets &   │
+│  (LLM)    │  (Live)   │  Finance  │  Moneycontrol   │
+└───────────┴───────────┴───────────┴─────────────────┘
+```
+
+---
+
+## ✨ Features
+
+### 🤖 AI Chat — Multi-Step Reasoning Engine
+- Conversational AI powered by **Sarvam 105B** (Indian LLM)
+- Chains up to **5 tools sequentially** for deep analysis
+- Portfolio-aware: references your holdings in responses
+- Multi-turn conversation with history context
+- Full-page AI chat + floating chat widget
+
+### 📊 Dashboard — Live Market Overview
+- Real-time **Nifty 50, Sensex, Bank Nifty, Nifty IT** indices
+- Top & worst performing NSE stocks (live)
+- Auto-refreshing every 10 seconds during market hours
+- Market open/closed status detection (IST-aware)
+
+### 🎯 Opportunity Radar — Deal Intelligence
+- **NSE bulk/block deals** — institutional buying & selling
+- **Insider trading disclosures** — SAST/PIT data from NSE
+- **Corporate filings** — board meetings, AGMs, announcements
+- **Quarterly results** — revenue, profit, EPS
+- **Management commentary** — investor presentations, earnings calls
+- **AI sentiment signals** from ET Markets & Moneycontrol news
+
+### 📈 Chart Pattern Intelligence
+- Interactive **candlestick charts** via Plotly.js
+- Technical indicators: **SMA 20/50, Bollinger Bands, RSI (14)**
+- AI-generated **signal detection**: Golden Cross, Death Cross, RSI zones
+- Period selection: 1M / 3M / 6M / 1Y
+- AI-powered pattern analysis narrative
+
+### 🔍 Universe Scanner
+- Scans entire **Nifty 50 / 200 / 500** universe
+- Detects: RSI oversold/overbought, MACD crossovers, SMA crossovers, volume spikes, breakouts/breakdowns
+- Click any result to view its full chart analysis
+
+### 💼 Portfolio Tracker
+- **Stocks**: Add NSE holdings, track live P&L
+- **Mutual Funds**: Search 40,000+ schemes via MFAPI.in, track NAV & returns
+- **Broker Connect**: Import holdings from Angel One / Groww / Upstox via API
+- Data persisted via **Firebase Firestore** (per-user)
+
+### 👁️ Watchlist & Price Alerts
+- Custom stock watchlist with live prices
+- Price alert system — set above/below targets
+- Quick-add popular NSE stocks
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend** | Next.js 15, React 19, TypeScript | App framework |
+| **Styling** | TailwindCSS, shadcn/ui, Radix UI | UI components |
+| **Charts** | Plotly.js, Recharts | Interactive visualizations |
+| **Auth** | Firebase Authentication | Google sign-in |
+| **Database** | Firebase Firestore | User data persistence |
+| **Backend** | FastAPI, Python 3.11, Uvicorn | REST API server |
+| **AI/LLM** | Sarvam AI (sarvam-105b) | Indian LLM for analysis |
+| **AI Framework** | LangChain (tool calling) | Multi-step agent orchestration |
+| **RAG** | FAISS + HuggingFace Embeddings | News retrieval & context |
+| **Market Data** | NSE India API, Yahoo Finance | Live prices & historical data |
+| **News** | ET Markets, Moneycontrol | Sentiment analysis source |
+| **Technical Analysis** | `ta` library (Python) | RSI, MACD, Bollinger, SMA |
+| **Mutual Funds** | MFAPI.in (free, no key) | NAV data for 40K+ schemes |
+| **Broker** | Angel One SmartAPI | Live portfolio import |
+| **Deployment** | Vercel (frontend), HF Spaces (backend) | Production hosting |
+
+---
+
+## 📁 Project Structure
+
+```
+marketvalve/
+├── backend/                    # FastAPI Backend
+│   ├── main.py                 # API routes (15+ endpoints)
+│   ├── requirements.txt        # Python dependencies
+│   ├── agents/
+│   │   └── market_agent.py     # Sarvam AI agent with multi-step reasoning
+│   ├── tools/
+│   │   ├── price_fetch.py      # Live NSE price fetcher
+│   │   ├── opportunity_radar.py # Deals, filings, insider trades, sentiment
+│   │   ├── chart_pattern.py    # Technical analysis engine
+│   │   ├── new_rag.py          # News RAG (ET Markets + Moneycontrol)
+│   │   ├── mutual_funds.py     # MF search, NAV, portfolio analysis
+│   │   └── broker_integration.py # Angel One / Groww / Upstox API
+│   └── rag/
+│       ├── news_fetcher.py     # Web scraping for financial news
+│       └── vector_store.py     # FAISS vector store for RAG
+│
+├── frontend/                   # Next.js Frontend
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── page.tsx            # Dashboard (home)
+│   │   ├── ai/                 # AI Chat full-page
+│   │   ├── alerts/             # Market Signals
+│   │   ├── performance/        # Chart Pattern Intelligence
+│   │   ├── portfolio/          # Portfolio (stocks + MF)
+│   │   ├── radar/              # Opportunity Radar
+│   │   ├── scanner/            # Universe Scanner
+│   │   ├── watchlist/          # Watchlist & Price Alerts
+│   │   └── settings/           # User settings
+│   ├── components/
+│   │   ├── pages/              # Page-level components (18 files)
+│   │   ├── ui/                 # shadcn/ui primitives
+│   │   ├── AIChat.tsx          # Floating AI chat widget
+│   │   ├── auth-provider.tsx   # Firebase auth context
+│   │   ├── dashboard-content.tsx
+│   │   ├── alerts-panel.tsx    # Opportunity Radar panel
+│   │   ├── alerts-history.tsx  # Signal history table
+│   │   ├── watchlist-stocks.tsx
+│   │   └── watchlist-alerts.tsx
+│   ├── lib/
+│   │   ├── api.ts              # Centralized backend URL config
+│   │   ├── firebase.ts         # Firebase initialization
+│   │   ├── firestore.ts        # Firestore CRUD helpers
+│   │   └── stockData.ts        # Stock data fetcher
+│   └── .env.local              # Environment variables
+│
+└── README.md                   # This file
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Node.js** 18+ and npm
+- **Python** 3.11+
+- **Sarvam AI API Key** — [Get one free at sarvam.ai](https://www.sarvam.ai/)
+- **Firebase Project** — for authentication & Firestore
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Adithya5369/marketvalve.git
+cd marketvalve
+```
+
+### 2. Backend Setup
+```bash
+cd backend
+
+# Create virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create .env file
+echo SARVAM_API_KEY=your_sarvam_api_key_here > .env
+
+# Start the server
+uvicorn main:app --reload --port 8000
+```
+
+The API will be available at `http://localhost:8000`. Swagger docs at `/docs`.
+
+### 3. Frontend Setup
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create .env.local with your config
+# (see .env.local.example below)
+
+# Start dev server
+npm run dev
+```
+
+The app will be available at `http://localhost:3000`.
+
+### Environment Variables
+
+**Backend (`.env`)**
+```env
+SARVAM_API_KEY=your_sarvam_api_key
+```
+
+**Frontend (`.env.local`)**
+```env
+# Backend API URL
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Firebase Config
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+```
+
+---
+
+## 📡 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Health check |
+| `GET` | `/stocks` | All Nifty 50 stocks (live prices) |
+| `GET` | `/indices` | Market indices (Nifty 50, Sensex, Bank Nifty, Nifty IT) |
+| `GET` | `/quote/{symbol}` | Single stock quote with price, change, volume, market cap |
+| `GET` | `/chart/{ticker}` | OHLCV + technical indicators (SMA, BB, RSI) |
+| `GET` | `/radar?stock=ALL` | Opportunity radar — deals, filings, insider trades, sentiment |
+| `GET` | `/scan?scope=nifty200` | Universe scanner — technical signal detection |
+| `POST` | `/chat` | AI chat — multi-step reasoning with portfolio context |
+| `GET` | `/mf/search?q=` | Search mutual funds (40K+ schemes) |
+| `GET` | `/mf/nav/{code}` | Get mutual fund NAV |
+| `POST` | `/broker/connect` | Connect broker (Angel One / Groww / Upstox) |
+| `GET` | `/broker/holdings` | Fetch broker holdings |
+| `GET` | `/broker/status` | Check broker connection status |
+
+---
+
+## 🧠 AI Agent — How It Works
+
+MarketValve's AI agent uses **LangChain tool calling** with Sarvam AI to perform multi-step analysis:
+
+```
+User Query: "Full analysis of RELIANCE"
+    │
+    ├── Step 1: price_fetch → Live price, change, volume
+    ├── Step 2: chart_pattern → RSI, MACD, SMA analysis
+    ├── Step 3: opportunity_radar → Bulk deals, insider trades, filings
+    ├── Step 4: news_rag → Latest ET Markets/Moneycontrol news
+    │
+    └── Final Synthesis → Portfolio-aware response with source citations
+```
+
+**Available Tools:**
+| Tool | Data Source | What It Does |
+|------|-----------|--------------|
+| `price_fetch` | NSE India (via yfinance) | Live stock/index prices |
+| `chart_pattern` | Yahoo Finance + `ta` lib | Technical analysis with indicators |
+| `opportunity_radar` | NSE India (bulk deals, filings) | Institutional activity & corporate events |
+| `news_rag` | ET Markets + Moneycontrol | RAG-based news retrieval & AI sentiment |
+| `get_top_mutual_funds` | MFAPI.in | Mutual fund search & NAV data |
+
+---
+
+## 🌐 Deployment
+
+| Service | Platform | URL |
+|---------|----------|-----|
+| Frontend | Vercel | [marketvalve.vercel.app](https://marketvalve.vercel.app) |
+| Backend | Hugging Face Spaces | [adithya5369-marketvalve-api-prod.hf.space](https://adithya5369-marketvalve-api-prod.hf.space) |
+
+---
+
+## 🏆 Why MarketValve Wins
+
+| Feature | ET Markets ChatGPT | MarketValve AI |
+|---------|-------------------|----------------|
+| Multi-step reasoning | ❌ Single query | ✅ Chains up to 5 tools |
+| Portfolio-aware | ❌ No portfolio context | ✅ References your holdings |
+| Source citations | ❌ No sources | ✅ Every response cites sources |
+| Live NSE data | ⚠️ Limited | ✅ Full Nifty 50/200/500 |
+| Insider trades | ❌ | ✅ Direct from NSE India |
+| Technical charts | ❌ | ✅ Interactive candlestick + indicators |
+| Universe scanner | ❌ | ✅ Scan entire Nifty index |
+| Broker integration | ❌ | ✅ Angel One / Groww / Upstox |
+| Mutual funds | ❌ | ✅ 40,000+ schemes with NAV |
+| Indian LLM | ❌ OpenAI | ✅ Sarvam AI (Indian context) |
+
+---
+
+## 👥 Team
+
+- **Adithya** — Full-Stack Development, AI Integration & Architecture
+- **Sasanka** — Testing & Ideation
+
+---
+
+## 🙏 Acknowledgments
+
+- The frontend UI was bootstrapped from [Financial-Dashboard-32](https://github.com/Adithya-5369/Financial-Dashboard-32), a personal project by Adithya, and then heavily extended with live data integrations, AI chat, portfolio tracking, and all backend-connected features for this hackathon.
+- **Sarvam AI** for providing the Indian LLM (sarvam-105b)
+- **NSE India** for live market data APIs
+- **MFAPI.in** for free mutual fund NAV data
+
+---
+
+## 📄 License
+
+This project was built for the **ET AI Hackathon 2026**. All rights reserved.
+
+---
+
+<p align="center">
+  <strong>MarketValve — Smarter investing starts here. 🚀</strong>
+</p>

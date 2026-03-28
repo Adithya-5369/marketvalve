@@ -4,7 +4,7 @@ import ta as ta_lib
 import numpy as np
 from langchain_core.tools import tool
 
-# ─── Candlestick Pattern Descriptions ─────────────────────────────────────────
+
 
 CANDLE_DESCRIPTIONS = {
     "CDL_DOJI":          "Doji — Indecision candle; trend reversal possible",
@@ -43,26 +43,21 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list:
         if total_range == 0:
             return detected
 
-        # Doji: very small body
         if body / total_range < 0.1:
             detected.append({"name": "Doji", "direction": "Neutral ⚪", "description": CANDLE_DESCRIPTIONS["CDL_DOJI"], "strength": 1})
 
-        # Hammer: small body at top, long lower shadow
         if lower_shadow > body * 2 and upper_shadow < body * 0.5 and c > o:
             detected.append({"name": "Hammer", "direction": "Bullish 🟢", "description": CANDLE_DESCRIPTIONS["CDL_HAMMER"], "strength": 2})
 
-        # Shooting Star: small body at bottom, long upper shadow
         if upper_shadow > body * 2 and lower_shadow < body * 0.5 and c < o:
             detected.append({"name": "Shooting Star", "direction": "Bearish 🔴", "description": CANDLE_DESCRIPTIONS["CDL_SHOOTINGSTAR"], "strength": 2})
 
-        # Engulfing
         po, pc = float(prev['Open']), float(prev['Close'])
         if pc < po and c > o and c > po and o < pc:
             detected.append({"name": "Bullish Engulfing", "direction": "Bullish 🟢", "description": CANDLE_DESCRIPTIONS["CDL_ENGULFING"], "strength": 3})
         elif pc > po and c < o and c < po and o > pc:
             detected.append({"name": "Bearish Engulfing", "direction": "Bearish 🔴", "description": CANDLE_DESCRIPTIONS["CDL_ENGULFING"], "strength": 3})
 
-        # Marubozu: no or tiny shadows
         if upper_shadow / total_range < 0.05 and lower_shadow / total_range < 0.05:
             direction = "Bullish 🟢" if c > o else "Bearish 🔴"
             detected.append({"name": "Marubozu", "direction": direction, "description": CANDLE_DESCRIPTIONS["CDL_MARUBOZU"], "strength": 3})
@@ -72,7 +67,7 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list:
     return detected
 
 
-# ─── RSI Divergence Detection ─────────────────────────────────────────────────
+
 
 def detect_rsi_divergence(df: pd.DataFrame, rsi_col: str, lookback: int = 14) -> list:
     """Detect bullish/bearish RSI divergences."""
@@ -83,12 +78,10 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_col: str, lookback: int = 14) ->
     prices = df['Close'].values
     rsi = df[rsi_col].values
 
-    # Look at last `lookback` periods for divergence
     recent = slice(-lookback, None)
     price_slice = prices[recent]
     rsi_slice = rsi[recent]
 
-    # Remove NaN
     valid = ~np.isnan(rsi_slice)
     if valid.sum() < 5:
         return divergences
@@ -96,13 +89,10 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_col: str, lookback: int = 14) ->
     price_valid = price_slice[valid]
     rsi_valid = rsi_slice[valid]
 
-    # Find local minima/maxima in last N bars
-    # Bullish divergence: price lower lows, RSI higher lows
     price_min_idx = np.argmin(price_valid[:len(price_valid)//2])
     price_min_idx2 = len(price_valid)//2 + np.argmin(price_valid[len(price_valid)//2:])
 
     if price_valid[price_min_idx2] < price_valid[price_min_idx]:
-        # Price made lower low
         if rsi_valid[price_min_idx2] > rsi_valid[price_min_idx]:
             divergences.append({
                 "type": "Bullish Divergence 🟢",
@@ -110,12 +100,10 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_col: str, lookback: int = 14) ->
                 "significance": "High"
             })
 
-    # Bearish divergence: price higher highs, RSI lower highs
     price_max_idx = np.argmax(price_valid[:len(price_valid)//2])
     price_max_idx2 = len(price_valid)//2 + np.argmax(price_valid[len(price_valid)//2:])
 
     if price_valid[price_max_idx2] > price_valid[price_max_idx]:
-        # Price made higher high
         if rsi_valid[price_max_idx2] < rsi_valid[price_max_idx]:
             divergences.append({
                 "type": "Bearish Divergence 🔴",
@@ -126,7 +114,7 @@ def detect_rsi_divergence(df: pd.DataFrame, rsi_col: str, lookback: int = 14) ->
     return divergences
 
 
-# ─── Simple Backtested Success Rates ──────────────────────────────────────────
+
 
 def backtest_signal(df: pd.DataFrame, signal_name: str, signal_func, forward_days: int = 5) -> dict | None:
     """
@@ -208,7 +196,7 @@ def run_backtests(df: pd.DataFrame) -> list:
     return results
 
 
-# ─── Helper: Calculate all indicators using `ta` library ──────────────────────
+
 
 def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """Add RSI, MACD, SMA, Bollinger Bands columns using the `ta` library."""
@@ -229,7 +217,7 @@ def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ─── Main Tool ────────────────────────────────────────────────────────────────
+
 
 @tool
 def chart_pattern(ticker: str) -> str:
@@ -251,7 +239,6 @@ def chart_pattern(ticker: str) -> str:
         if df.empty or len(df) < 20:
             return f"Not enough data for {clean} to detect patterns."
 
-        # Calculate indicators using ta library
         df = calculate_indicators(df)
 
         latest = df.iloc[-1]
@@ -259,35 +246,27 @@ def chart_pattern(ticker: str) -> str:
 
         current_price = round(float(latest['Close']), 2)
 
-        # RSI
         rsi = round(float(latest['RSI_14']), 2) if not pd.isna(latest['RSI_14']) else None
 
-        # MACD
         macd = round(float(latest['MACD_12_26_9']), 2) if not pd.isna(latest['MACD_12_26_9']) else None
         signal = round(float(latest['MACDs_12_26_9']), 2) if not pd.isna(latest['MACDs_12_26_9']) else None
 
-        # SMAs
         sma20 = round(float(latest['SMA_20']), 2) if not pd.isna(latest['SMA_20']) else None
         sma50 = round(float(latest['SMA_50']), 2) if not pd.isna(latest['SMA_50']) else None
 
-        # Bollinger Bands
         bb_upper = round(float(latest['BBU_20']), 2) if not pd.isna(latest['BBU_20']) else None
         bb_lower = round(float(latest['BBL_20']), 2) if not pd.isna(latest['BBL_20']) else None
 
-        # Support & Resistance (20-day high/low)
         high_20 = round(float(df['High'].tail(20).max()), 2)
         low_20 = round(float(df['Low'].tail(20).min()), 2)
 
-        # ── Standard Pattern Detection ────────────────────────────────────
         patterns = []
 
-        # Volume spike
         avg_volume = int(df['Volume'].tail(20).mean())
         latest_volume = int(latest['Volume'])
         if latest_volume > avg_volume * 1.5:
             patterns.append(f"📢 Volume spike — {latest_volume:,} vs avg {avg_volume:,} (unusual activity)")
 
-        # Trend
         if sma20 and sma50:
             if current_price > sma20 > sma50:
                 patterns.append("✅ Strong Uptrend — price above both 20 & 50 day MA")
@@ -296,7 +275,6 @@ def chart_pattern(ticker: str) -> str:
             elif sma20 > sma50:
                 patterns.append("⚡ Bullish crossover — 20MA above 50MA")
 
-        # Golden/Death cross
         if sma20 and sma50:
             prev_sma20 = round(float(prev['SMA_20']), 2) if not pd.isna(prev['SMA_20']) else None
             prev_sma50 = round(float(prev['SMA_50']), 2) if not pd.isna(prev['SMA_50']) else None
@@ -306,7 +284,6 @@ def chart_pattern(ticker: str) -> str:
                 elif prev_sma20 > prev_sma50 and sma20 < sma50:
                     patterns.append("💀 Death Cross detected — strong bearish signal")
 
-        # RSI signals
         if rsi:
             if rsi > 70:
                 patterns.append(f"⚠️ Overbought — RSI at {rsi} (above 70)")
@@ -317,37 +294,30 @@ def chart_pattern(ticker: str) -> str:
             else:
                 patterns.append(f"📉 Bearish momentum — RSI at {rsi}")
 
-        # MACD signals
         if macd and signal:
             if macd > signal:
                 patterns.append("🟢 MACD bullish crossover — buy signal")
             else:
                 patterns.append("🔴 MACD bearish crossover — sell signal")
 
-        # Breakout
         if current_price >= high_20 * 0.99:
             patterns.append(f"🚀 Near 20-day HIGH breakout at ₹{high_20}")
         elif current_price <= low_20 * 1.01:
             patterns.append(f"⚠️ Near 20-day LOW support at ₹{low_20}")
 
-        # Bollinger Band
         if bb_upper and bb_lower:
             if current_price > bb_upper:
                 patterns.append("📊 Price above upper Bollinger Band — strong momentum")
             elif current_price < bb_lower:
                 patterns.append("📊 Price below lower Bollinger Band — oversold zone")
 
-        # ── Candlestick Pattern Detection ─────────────────────────────────
         candle_patterns = detect_candlestick_patterns(df)
 
-        # ── RSI Divergence Detection ──────────────────────────────────────
         divergences = []
         divergences = detect_rsi_divergence(df, 'RSI_14')
 
-        # ── Backtested Success Rates ──────────────────────────────────────
         backtests = run_backtests(df)
 
-        # ── Build Output ─────────────────────────────────────────────────
         output = f"[Technical Analysis — {clean}]\n"
         output += f"Current Price: ₹{current_price}\n"
         output += f"20-day Range: ₹{low_20} — ₹{high_20}\n\n"

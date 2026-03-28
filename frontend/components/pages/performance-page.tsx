@@ -98,7 +98,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
     { label: "1Y", value: "1y" },
   ]
 
-  // --- Computed stats ---
+
   const lastClose = chartData?.ohlc.close.at(-1)
   const prevClose = chartData?.ohlc.close.at(-2)
   const priceChange = lastClose && prevClose ? lastClose - prevClose : 0
@@ -116,7 +116,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
   const dayLow = chartData ? Math.min(...chartData.ohlc.low.filter(v => v > 0)) : 0
   const avgVolume = chartData ? (chartData.volume.reduce((a, b) => a + b, 0) / chartData.volume.length) : 0
 
-  // Signal detection
+
   let signal = "HOLD"
   let signalReason = "No clear directional signal"
   let signalColor = "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"

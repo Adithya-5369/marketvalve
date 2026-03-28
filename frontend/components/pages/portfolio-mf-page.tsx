@@ -26,7 +26,7 @@ export function PortfolioMFPage() {
 
   const mfKey = user ? userKey(user.uid, "portfolio_mf") : "mv_portfolio_mf"
 
-  // Load from Firestore
+
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "portfolio_mf").then(data => {

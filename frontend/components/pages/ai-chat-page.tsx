@@ -39,7 +39,7 @@ export function AIFullPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
 
-  // Portfolio: stocks vs mutual funds
+
   const [rightTab, setRightTab] = useState<"broker" | "stocks" | "mf">("broker")
   const [portfolio, setPortfolio] = useState<Holding[]>([])
   const [mfPortfolio, setMfPortfolio] = useState<MFHolding[]>([])
@@ -47,14 +47,14 @@ export function AIFullPage() {
   const [newQty, setNewQty] = useState("")
   const [newAvg, setNewAvg] = useState("")
 
-  // MF
+
   const [mfSearch, setMfSearch] = useState("")
   const [mfResults, setMfResults] = useState<any[]>([])
   const [mfSearching, setMfSearching] = useState(false)
   const [newMfUnits, setNewMfUnits] = useState("")
   const [newMfInvested, setNewMfInvested] = useState("")
 
-  // Broker
+
   const [selectedBroker, setSelectedBroker] = useState<string>("angelone")
   const [brokerConnected, setBrokerConnected] = useState(false)
   const [brokerLoading, setBrokerLoading] = useState(false)
@@ -94,7 +94,7 @@ export function AIFullPage() {
     setNewStock(""); setNewQty(""); setNewAvg("")
   }
 
-  // MF search
+
   async function searchMF() {
     if (!mfSearch.trim()) return
     setMfSearching(true)
@@ -117,7 +117,7 @@ export function AIFullPage() {
     setNewMfUnits(""); setNewMfInvested(""); setMfResults([])
   }
 
-  // Broker
+
   async function checkBrokerStatus() {
     try { const r = await fetch(`${API_BASE_URL}/broker/status`); const d = await r.json(); setBrokerConnected(d.connected); if (d.connected) fetchBrokerHoldings() } catch {}
   }
@@ -153,7 +153,7 @@ export function AIFullPage() {
     const msg = text || input; if (!msg.trim()) return
     setMessages(prev => [...prev, { role: "user", content: msg }]); setInput(""); setLoading(true)
     const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
-    // Merge stock + MF portfolio for AI context
+
     const fullPortfolio = [
       ...portfolio.map(h => ({ ...h, type: "stock" })),
       ...mfPortfolio.map(h => ({ symbol: h.scheme_name, qty: h.units, avg_price: h.invested / (h.units || 1), type: "mutual_fund" })),

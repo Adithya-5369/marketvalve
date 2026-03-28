@@ -57,16 +57,14 @@ export function DashboardContent() {
     const fetchMarketData = () => { loadStocks(); loadIndices() }
     fetchMarketData()
 
-    // Determine market status
     const updateMarketStatus = () => {
       const now = new Date()
-      // IST offset is +5:30. Current UTC hours + 5.5 = IST hours
       const estTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000))
       const hours = estTime.getUTCHours()
       const minutes = estTime.getUTCMinutes()
       const day = estTime.getUTCDay()
       
-      const isWeekend = day === 0 || day === 6 // Saturday or Sunday
+      const isWeekend = day === 0 || day === 6
       const isLiveHours = (hours > 9 || (hours === 9 && minutes >= 15)) && (hours < 15 || (hours === 15 && minutes <= 30))
       
       setMarketStatus(isWeekend || !isLiveHours ? "Closed" : "Live")
@@ -95,7 +93,7 @@ export function DashboardContent() {
         </p>
       </div>
 
-      {/* Indian Market Indices */}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {marketIndices.map((item, index) => (
           <Card key={index}>
@@ -127,7 +125,7 @@ export function DashboardContent() {
         ))}
       </div>
 
-      {/* Top & Worst Performers — Live NSE Data */}
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>

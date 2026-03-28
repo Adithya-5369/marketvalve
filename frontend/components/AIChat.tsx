@@ -49,7 +49,7 @@ export default function AIChat() {
     }
   }, [isOpen]);
 
-  // Listen for search bar "Ask AI" events
+
   useEffect(() => {
     function handleAskAI(e: Event) {
       const detail = (e as CustomEvent).detail;
@@ -62,7 +62,7 @@ export default function AIChat() {
     return () => window.removeEventListener("marketvalve-ask-ai", handleAskAI);
   }, []);
 
-  // Load portfolio from localStorage
+
   useEffect(() => {
     const saved = localStorage.getItem("marketvalve-portfolio");
     if (saved) {
@@ -119,7 +119,6 @@ export default function AIChat() {
     setInput("");
     setLoading(true);
 
-    // Build history for context (last 10 messages)
     const history = messages.slice(-10).map(m => ({
       role: m.role,
       content: m.content,
@@ -191,7 +190,7 @@ export default function AIChat() {
         .chat-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.3); border-radius: 2px; }
       `}</style>
 
-      {/* Floating Button */}
+
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 bg-primary text-primary-foreground"
@@ -211,10 +210,10 @@ export default function AIChat() {
         )}
       </button>
 
-      {/* Chat Panel */}
+
       {isOpen && (
         <div className="chat-panel fixed bottom-24 right-6 z-50 flex flex-col rounded-2xl overflow-hidden w-[440px] h-[600px] bg-background border border-border shadow-2xl">
-          {/* Header */}
+
           <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border bg-muted/50">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary text-primary-foreground">
@@ -235,7 +234,7 @@ export default function AIChat() {
               </div>
             </div>
             <div className="flex items-center gap-1">
-              {/* Portfolio button */}
+  
               <button
                 onClick={() => setShowPortfolio(!showPortfolio)}
                 className={`text-xs px-2 py-1 rounded transition-colors ${showPortfolio ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
@@ -258,7 +257,7 @@ export default function AIChat() {
             </div>
           </div>
 
-          {/* Portfolio Panel (collapsible) */}
+
           {showPortfolio && (
             <div className="px-4 py-3 border-b border-border bg-muted/30 space-y-2">
               <div className="text-xs font-semibold text-foreground">Your Portfolio</div>
@@ -283,7 +282,7 @@ export default function AIChat() {
             </div>
           )}
 
-          {/* Messages */}
+
           <div className="flex-1 overflow-y-auto chat-scrollbar px-4 py-3 space-y-3">
             {messages.map((msg, i) => (
               <div key={i}>
@@ -306,10 +305,10 @@ export default function AIChat() {
                   </div>
                 </div>
 
-                {/* Reasoning steps & sources (for assistant messages) */}
+
                 {msg.role === "assistant" && (msg.reasoning_steps?.length || msg.sources?.length) ? (
                   <div className="ml-8 mt-1.5 space-y-1">
-                    {/* Reasoning chain */}
+
                     {msg.reasoning_steps && msg.reasoning_steps.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {msg.reasoning_steps.map((step, j) => (
@@ -319,7 +318,7 @@ export default function AIChat() {
                         ))}
                       </div>
                     )}
-                    {/* Sources */}
+
                     {msg.sources && msg.sources.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {msg.sources.map((src, j) => (
@@ -334,7 +333,7 @@ export default function AIChat() {
               </div>
             ))}
 
-            {/* Typing indicator */}
+
             {loading && (
               <div className="msg-bubble flex justify-start">
                 <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 mr-2 mt-0.5 bg-primary text-primary-foreground">
@@ -351,7 +350,7 @@ export default function AIChat() {
               </div>
             )}
 
-            {/* Suggestion chips */}
+
             {showSuggestions && !loading && (
               <div className="pt-1">
                 <p className="text-xs text-muted-foreground mb-2 px-1">
@@ -374,7 +373,7 @@ export default function AIChat() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
+
           <div className="shrink-0 px-3 py-3 border-t border-border">
             <div className="flex items-center gap-2 rounded-xl px-3 py-2 bg-muted border border-border">
               <input
