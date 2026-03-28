@@ -10,6 +10,7 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Minus,
   AlertCircle, Newspaper, X
 } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api"
 
 interface Signal {
   title: string
@@ -50,7 +51,7 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
     setError("")
     try {
       const stockParam = stockFilter || "ALL"
-      const res = await fetch(`http://localhost:8000/radar?stock=${stockParam}`)
+      const res = await fetch(`${API_BASE_URL}/radar?stock=${stockParam}`)
       if (!res.ok) throw new Error("Failed to fetch")
       const data: RadarData = await res.json()
       setRadarData(data)

@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { saveUserData, loadUserData } from "@/lib/firestore"
+import { API_BASE_URL } from "@/lib/api"
 
 const SUGGESTIONS = [
   { text: "Full analysis of RELIANCE", emoji: "📊" },
@@ -98,7 +99,7 @@ export function AIFullPage() {
     if (!mfSearch.trim()) return
     setMfSearching(true)
     try {
-      const r = await fetch(`http://localhost:8000/mf/search?q=${encodeURIComponent(mfSearch)}`)
+      const r = await fetch(`${API_BASE_URL}/mf/search?q=${encodeURIComponent(mfSearch)}`)
       const d = await r.json()
       setMfResults(d.slice(0, 8))
     } catch {} finally { setMfSearching(false) }
@@ -118,21 +119,21 @@ export function AIFullPage() {
 
   // Broker
   async function checkBrokerStatus() {
-    try { const r = await fetch("http://localhost:8000/broker/status"); const d = await r.json(); setBrokerConnected(d.connected); if (d.connected) fetchBrokerHoldings() } catch {}
+    try { const r = await fetch(`${API_BASE_URL}/broker/status`); const d = await r.json(); setBrokerConnected(d.connected); if (d.connected) fetchBrokerHoldings() } catch {}
   }
   async function connectBroker() {
     setBrokerLoading(true)
     try {
-      const r = await fetch("http://localhost:8000/broker/connect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(brokerCreds) })
+      const r = await fetch(`${API_BASE_URL}/broker/connect`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(brokerCreds) })
       const d = await r.json()
       if (d.status === "success") { setBrokerConnected(true); setBrokerName(d.client_name || d.client_id); setShowBrokerForm(false); fetchBrokerHoldings() }
       else alert(d.message || "Connection failed")
     } catch { alert("Backend unreachable") } finally { setBrokerLoading(false) }
   }
-  async function disconnectBroker() { await fetch("http://localhost:8000/broker/disconnect", { method: "POST" }); setBrokerConnected(false); setBrokerName(""); setPortfolioSummary(null) }
+  async function disconnectBroker() { await fetch(`${API_BASE_URL}/broker/disconnect`, { method: "POST" }); setBrokerConnected(false); setBrokerName(""); setPortfolioSummary(null) }
   async function fetchBrokerHoldings() {
     try {
-      const r = await fetch("http://localhost:8000/broker/holdings"); const d = await r.json()
+      const r = await fetch(`${API_BASE_URL}/broker/holdings`); const d = await r.json()
       if (d.status === "success") {
         setPortfolioSummary(d.summary)
         savePortfolio(d.holdings.map((h: any) => ({ symbol: h.symbol, qty: h.qty, avg_price: h.avg_price, ltp: h.ltp, pnl: h.pnl, pnl_pct: h.pnl_pct, current_value: h.current_value, invested: h.invested })))
@@ -158,7 +159,7 @@ export function AIFullPage() {
       ...mfPortfolio.map(h => ({ symbol: h.scheme_name, qty: h.units, avg_price: h.invested / (h.units || 1), type: "mutual_fund" })),
     ]
     try {
-      const r = await fetch("http://localhost:8000/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: msg, portfolio: fullPortfolio, history }) })
+      const r = await fetch(`${API_BASE_URL}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: msg, portfolio: fullPortfolio, history }) })
       const d = await r.json()
       setMessages(prev => [...prev, { role: "assistant", content: d.response, sources: d.sources || [], reasoning_steps: d.reasoning_steps || [], tools_used: d.tools_used || 0 }])
     } catch { setMessages(prev => [...prev, { role: "assistant", content: "Unable to reach MarketValve API. Please check if the backend is running." }]) }

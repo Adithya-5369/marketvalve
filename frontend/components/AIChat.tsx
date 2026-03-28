@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { API_BASE_URL } from "@/lib/api";
 
 const SUGGESTIONS = [
   "Give me a full analysis of RELIANCE",
@@ -125,7 +126,7 @@ export default function AIChat() {
     }));
 
     try {
-      const res = await fetch("http://localhost:8000/chat", {
+      const res = await fetch(`${API_BASE_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

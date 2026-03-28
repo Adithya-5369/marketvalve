@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Line, LineChart, ResponsiveContainer } from "recharts"
 import { ArrowDown, ArrowUp, TrendingDown, TrendingUp, Clock } from "lucide-react"
 import { fetchAllStocks } from "@/lib/stockData"
+import { API_BASE_URL } from "@/lib/api"
 
 type MarketIndex = { name: string; value: number; change: number }
 
@@ -41,7 +42,7 @@ export function DashboardContent() {
 
     async function loadIndices() {
       try {
-        const res = await fetch("http://localhost:8000/indices")
+        const res = await fetch(`${API_BASE_URL}/indices`)
         const data = await res.json()
         setMarketIndices(
           (Array.isArray(data) ? data : []).map((item) => ({

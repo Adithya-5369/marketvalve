@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Briefcase, Plus, Trash2, RefreshCw, Search, ArrowUp, ArrowDown } from "lucide-react"
 import { useAuth, userKey } from "@/components/auth-provider"
 import { saveUserData, loadUserData } from "@/lib/firestore"
+import { API_BASE_URL } from "@/lib/api"
 
 interface MFHolding {
   scheme_code: string; scheme_name: string; invested: number; units: number
@@ -42,7 +43,7 @@ export function PortfolioMFPage() {
     if (!mfSearch.trim()) return
     setMfSearching(true)
     try {
-      const r = await fetch(`http://localhost:8000/mf/search?q=${encodeURIComponent(mfSearch)}`)
+      const r = await fetch(`${API_BASE_URL}/mf/search?q=${encodeURIComponent(mfSearch)}`)
       const d = await r.json()
       setMfResults(d.slice(0, 10))
     } catch {} finally { setMfSearching(false) }
@@ -68,7 +69,7 @@ export function PortfolioMFPage() {
     const updated = await Promise.all(
       src.map(async (m) => {
         try {
-          const r = await fetch(`http://localhost:8000/mf/nav/${m.scheme_code}`)
+          const r = await fetch(`${API_BASE_URL}/mf/nav/${m.scheme_code}`)
           const d = await r.json()
           if (d.status === "success" && d.current_nav) {
             const cv = m.units * d.current_nav

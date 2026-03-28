@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { API_BASE_URL } from "@/lib/api"
 
 interface Signal {
   title: string
@@ -25,7 +26,7 @@ export function AlertsHistory() {
         if (!isBackground) setLoading(true)
         
         try {
-          const res = await fetch("http://localhost:8000/radar?stock=ALL")
+          const res = await fetch(`${API_BASE_URL}/radar?stock=ALL`)
           const data = await res.json()
           setSignals(data.signals || [])
         } catch {

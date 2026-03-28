@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api"
 
 interface Deal {
   symbol: string
@@ -77,7 +78,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
       setError("")
       
       try {
-        const res = await fetch("http://localhost:8000/radar?stock=ALL")
+        const res = await fetch(`${API_BASE_URL}/radar?stock=ALL`)
         if (!res.ok) throw new Error("Failed to fetch")
         const data: RadarData = await res.json()
         

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Bell, BellRing, Plus, Trash2, ArrowUp, ArrowDown, RefreshCw } from "lucide-react"
 import { useAuth, userKey } from "@/components/auth-provider"
 import { saveUserData, loadUserData } from "@/lib/firestore"
+import { API_BASE_URL } from "@/lib/api"
 
 interface PriceAlert {
   id: string
@@ -66,7 +67,7 @@ export function WatchlistAlerts() {
     const updated = await Promise.all(
       alerts.map(async (alert) => {
         try {
-          const r = await fetch(`http://localhost:8000/quote/${alert.symbol}`)
+          const r = await fetch(`${API_BASE_URL}/quote/${alert.symbol}`)
           const d = await r.json()
           if (d.status === "success") {
             const triggered = alert.condition === "above"

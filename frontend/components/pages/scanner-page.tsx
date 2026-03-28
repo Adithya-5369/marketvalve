@@ -9,6 +9,7 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Activity,
   AlertCircle, ScanLine, Zap
 } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api"
 
 interface Signal {
   type: string
@@ -50,7 +51,7 @@ export function ScannerPage() {
     setLoading(true)
     setError("")
     try {
-      const res = await fetch(`http://localhost:8000/scan?scope=${scope}`)
+      const res = await fetch(`${API_BASE_URL}/scan?scope=${scope}`)
       if (!res.ok) throw new Error("Scan failed")
       const result: ScanResult = await res.json()
       setData(result)

@@ -10,6 +10,7 @@ import {
   Search, TrendingUp, TrendingDown, BarChart2,
   RefreshCw, Activity, Target, Zap, ArrowUpRight, ArrowDownRight
 } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api"
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false })
 
@@ -66,8 +67,8 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
 
     try {
       const [chartRes, aiRes] = await Promise.all([
-        fetch(`http://localhost:8000/chart/${t}?period=${period}`),
-        fetch("http://localhost:8000/chat", {
+        fetch(`${API_BASE_URL}/chart/${t}?period=${period}`),
+        fetch(`${API_BASE_URL}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: `Technical analysis of ${t}` })

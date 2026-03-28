@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { useAuth, userKey } from "@/components/auth-provider"
 import { saveUserData, loadUserData } from "@/lib/firestore"
+import { API_BASE_URL } from "@/lib/api"
 
 interface StockHolding {
   symbol: string; qty: number; avg_price: number
@@ -81,7 +82,7 @@ export function PortfolioPage() {
     const updated = await Promise.all(
       src.map(async (h) => {
         try {
-          const r = await fetch(`http://localhost:8000/quote/${h.symbol}`)
+          const r = await fetch(`${API_BASE_URL}/quote/${h.symbol}`)
           const d = await r.json()
           if (d.status === "success" && d.price) {
             const ltp = d.price
@@ -104,7 +105,7 @@ export function PortfolioPage() {
     if (!mfSearch.trim()) return
     setMfSearching(true)
     try {
-      const r = await fetch(`http://localhost:8000/mf/search?q=${encodeURIComponent(mfSearch)}`)
+      const r = await fetch(`${API_BASE_URL}/mf/search?q=${encodeURIComponent(mfSearch)}`)
       const d = await r.json()
       setMfResults(d.slice(0, 8))
     } catch {} finally { setMfSearching(false) }
@@ -130,7 +131,7 @@ export function PortfolioPage() {
     const updated = await Promise.all(
       src.map(async (m) => {
         try {
-          const r = await fetch(`http://localhost:8000/mf/nav/${m.scheme_code}`)
+          const r = await fetch(`${API_BASE_URL}/mf/nav/${m.scheme_code}`)
           const d = await r.json()
           if (d.status === "success" && d.current_nav) {
             const cv = m.units * d.current_nav

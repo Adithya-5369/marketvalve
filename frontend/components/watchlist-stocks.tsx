@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowDown, ArrowUp, Plus, Search, Trash2, RefreshCw, TrendingUp } from "lucide-react"
 import { useAuth, userKey } from "@/components/auth-provider"
 import { saveUserData, loadUserData } from "@/lib/firestore"
+import { API_BASE_URL } from "@/lib/api"
 
 interface WatchlistItem {
   symbol: string
@@ -49,7 +50,7 @@ export function WatchlistStocks() {
     const updated = await Promise.all(
       watchlist.map(async (item) => {
         try {
-          const r = await fetch(`http://localhost:8000/quote/${item.symbol}`)
+          const r = await fetch(`${API_BASE_URL}/quote/${item.symbol}`)
           const d = await r.json()
           if (d.status === "success") {
             return { ...item, price: d.price, change: d.change, change_pct: d.change_pct, volume: d.volume, market_cap: d.market_cap, loading: false, error: undefined }
@@ -83,7 +84,7 @@ export function WatchlistStocks() {
     saveSymbols(newItems)
     setAddSymbol("")
     // Fetch price for new stock
-    fetch(`http://localhost:8000/quote/${sym}`).then(r => r.json()).then(d => {
+    fetch(`${API_BASE_URL}/quote/${sym}`).then(r => r.json()).then(d => {
       setItems(prev => prev.map(item =>
         item.symbol === sym
           ? { ...item, price: d.price, change: d.change, change_pct: d.change_pct, volume: d.volume, market_cap: d.market_cap, loading: false }
@@ -143,7 +144,7 @@ export function WatchlistStocks() {
             <p className="text-sm text-muted-foreground mb-2">Quick add popular NSE stocks:</p>
             <div className="flex flex-wrap gap-1.5">
               {POPULAR.map(s => (
-                <Button key={s} variant="outline" size="sm" className="text-xs h-7" onClick={() => { setAddSymbol(s); setTimeout(() => { const newItems = [...items, { symbol: s, loading: true }]; saveSymbols(newItems); fetch(`http://localhost:8000/quote/${s}`).then(r => r.json()).then(d => { setItems(prev => prev.map(item => item.symbol === s ? { ...item, price: d.price, change: d.change, change_pct: d.change_pct, volume: d.volume, market_cap: d.market_cap, loading: false } : item)) }) }, 0) }}>
+                <Button key={s} variant="outline" size="sm" className="text-xs h-7" onClick={() => { setAddSymbol(s); setTimeout(() => { const newItems = [...items, { symbol: s, loading: true }]; saveSymbols(newItems); fetch(`${API_BASE_URL}/quote/${s}`).then(r => r.json()).then(d => { setItems(prev => prev.map(item => item.symbol === s ? { ...item, price: d.price, change: d.change, change_pct: d.change_pct, volume: d.volume, market_cap: d.market_cap, loading: false } : item)) }) }, 0) }}>
                   {s}
                 </Button>
               ))}
