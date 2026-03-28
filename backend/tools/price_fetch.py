@@ -1,5 +1,5 @@
 from curl_cffi import requests
-from langchain.tools import tool
+from langchain_core.tools import tool
 
 # Reusable NSE session helper
 def _nse_session():
