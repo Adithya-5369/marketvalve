@@ -7,6 +7,7 @@ from tools.price_fetch import price_fetch
 from tools.new_rag import news_rag
 from tools.opportunity_radar import opportunity_radar
 from tools.chart_pattern import chart_pattern
+from tools.mutual_funds import get_top_mutual_funds
 
 load_dotenv()
 
@@ -17,7 +18,7 @@ llm = ChatOpenAI(
     temperature=0.1
 )
 
-tools = [price_fetch, news_rag, opportunity_radar, chart_pattern]
+tools = [price_fetch, news_rag, opportunity_radar, chart_pattern, get_top_mutual_funds]
 tools_map = {t.name: t for t in tools}
 llm_with_tools = llm.bind_tools(tools)
 
@@ -39,6 +40,7 @@ Rules:
 - Use news_rag for news queries — call it ONLY ONCE
 - Use opportunity_radar for bulk deals, block deals, institutional activity, FII/DII signals, insider trades, corporate filings, quarterly results, management commentary, promoter activity
 - Use chart_pattern for technical analysis, chart patterns, RSI, MACD, support/resistance, backtest data
+- Use get_top_mutual_funds WHENEVER the user asks for mutual fund names, best mutual funds, or recommendations.
 - You can call MULTIPLE tools in sequence for a comprehensive analysis (multi-step reasoning)
 - If the user has a portfolio, proactively mention how data relates to their holdings
 - After getting tool results, ALWAYS give a complete self-contained answer
