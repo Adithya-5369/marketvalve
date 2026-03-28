@@ -284,11 +284,13 @@ async def get_chart_data(ticker: str, period: str = "3mo"):
         if df.empty:
             return {"error": "No data found"}
 
-        import pandas_ta as ta
-        df.ta.sma(length=20, append=True)
-        df.ta.sma(length=50, append=True)
-        df.ta.bbands(length=20, append=True)
-        df.ta.rsi(length=14, append=True)
+        import ta as ta_lib
+        df['SMA_20'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=20).sma_indicator()
+        df['SMA_50'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=50).sma_indicator()
+        bb = ta_lib.volatility.BollingerBands(close=df['Close'], window=20)
+        df['BBU_20'] = bb.bollinger_hband()
+        df['BBL_20'] = bb.bollinger_lband()
+        df['RSI_14'] = ta_lib.momentum.RSIIndicator(close=df['Close'], window=14).rsi()
 
         # Find column names
         sma20 = [c for c in df.columns if 'SMA_20' in c]
@@ -372,7 +374,7 @@ async def scan_nse_universe(scope: str = "nifty200"):
     Scan NSE stocks for technical pattern signals.
     scope: nifty50, nifty200, nifty500 (default: nifty200)
     """
-    import pandas_ta as ta
+    import ta as ta_lib
     import numpy as np
 
     # Map scope to NSE index name
@@ -405,11 +407,13 @@ async def scan_nse_universe(scope: str = "nifty200"):
             scanned += 1
             price = round(float(df['Close'].iloc[-1]), 2)
 
-            # Calculate indicators
-            df.ta.rsi(length=14, append=True)
-            df.ta.macd(append=True)
-            df.ta.sma(length=20, append=True)
-            df.ta.sma(length=50, append=True)
+            # Calculate indicators using ta library
+            df['RSI_14'] = ta_lib.momentum.RSIIndicator(close=df['Close'], window=14).rsi()
+            macd_ind = ta_lib.trend.MACD(close=df['Close'])
+            df['MACD_12_26_9'] = macd_ind.macd()
+            df['MACDs_12_26_9'] = macd_ind.macd_signal()
+            df['SMA_20'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=20).sma_indicator()
+            df['SMA_50'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=50).sma_indicator()
 
             rsi_col = [c for c in df.columns if 'RSI' in c]
             macd_col = [c for c in df.columns if 'MACD_12' in c and 'Signal' not in c and 'Hist' not in c]
@@ -476,6 +480,7 @@ async def scan_nse_universe(scope: str = "nifty200"):
         except Exception as e:
             errors += 1
             continue
+
 
     return {
         "date": datetime.now().strftime("%d %b %Y %H:%M"),

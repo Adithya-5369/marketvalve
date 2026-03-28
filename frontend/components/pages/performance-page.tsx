@@ -278,18 +278,32 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
           {/* Range Card */}
           <Card>
             <CardContent className="pt-4 pb-3">
-              <div className="flex justify-between items-center px-1 mb-1 text-muted-foreground text-xs">
-                <span>Low</span>
-                <span className="font-semibold text-foreground">₹{dayLow.toFixed(0)} - ₹{dayHigh.toFixed(0)}</span>
-                <span>High</span>
-              </div>
-              <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{
-                    width: `${dayHigh > dayLow ? ((lastClose! - dayLow) / (dayHigh - dayLow)) * 100 : 50}%`
-                  }}
-                />
+              <p className="text-xs text-muted-foreground mb-2">Price Range</p>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">₹{dayLow.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                  <span className="font-semibold text-foreground text-sm">
+                    ₹{lastClose?.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                  </span>
+                  <span className="text-muted-foreground">₹{dayHigh.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
+                </div>
+                <div className="relative h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 rounded-full transition-all"
+                    style={{ width: '100%' }}
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white border-2 border-primary rounded-full shadow-md transition-all"
+                    style={{
+                      left: `clamp(0%, ${dayHigh > dayLow ? ((lastClose! - dayLow) / (dayHigh - dayLow)) * 100 : 50}%, 100%)`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Low</span>
+                  <span>High</span>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -1,6 +1,6 @@
 import yfinance as yf
 import pandas as pd
-import pandas_ta as ta
+import ta as ta_lib
 import numpy as np
 from langchain_core.tools import tool
 
@@ -26,45 +26,49 @@ CANDLE_DESCRIPTIONS = {
 
 
 def detect_candlestick_patterns(df: pd.DataFrame) -> list:
-    """Detect candlestick patterns using pandas_ta."""
+    """Detect simple candlestick patterns manually (no pandas_ta needed)."""
     detected = []
     try:
-        # Try the all-at-once method first
-        candles = df.ta.cdl_pattern(name="all")
-        if candles is not None and not candles.empty:
-            latest = candles.iloc[-1]
-            for col in candles.columns:
-                val = latest[col]
-                if pd.notna(val) and val != 0:
-                    pattern_name = col.replace("CDL_", "").replace("_", " ").title()
-                    desc = CANDLE_DESCRIPTIONS.get(col, f"{pattern_name} pattern detected")
-                    direction = "Bullish 🟢" if val > 0 else "Bearish 🔴"
-                    detected.append({
-                        "name": pattern_name,
-                        "direction": direction,
-                        "description": desc,
-                        "strength": abs(int(val)),
-                    })
+        if len(df) < 3:
+            return detected
+
+        latest = df.iloc[-1]
+        prev = df.iloc[-2]
+        o, h, l, c = float(latest['Open']), float(latest['High']), float(latest['Low']), float(latest['Close'])
+        body = abs(c - o)
+        upper_shadow = h - max(o, c)
+        lower_shadow = min(o, c) - l
+        total_range = h - l
+
+        if total_range == 0:
+            return detected
+
+        # Doji: very small body
+        if body / total_range < 0.1:
+            detected.append({"name": "Doji", "direction": "Neutral ⚪", "description": CANDLE_DESCRIPTIONS["CDL_DOJI"], "strength": 1})
+
+        # Hammer: small body at top, long lower shadow
+        if lower_shadow > body * 2 and upper_shadow < body * 0.5 and c > o:
+            detected.append({"name": "Hammer", "direction": "Bullish 🟢", "description": CANDLE_DESCRIPTIONS["CDL_HAMMER"], "strength": 2})
+
+        # Shooting Star: small body at bottom, long upper shadow
+        if upper_shadow > body * 2 and lower_shadow < body * 0.5 and c < o:
+            detected.append({"name": "Shooting Star", "direction": "Bearish 🔴", "description": CANDLE_DESCRIPTIONS["CDL_SHOOTINGSTAR"], "strength": 2})
+
+        # Engulfing
+        po, pc = float(prev['Open']), float(prev['Close'])
+        if pc < po and c > o and c > po and o < pc:
+            detected.append({"name": "Bullish Engulfing", "direction": "Bullish 🟢", "description": CANDLE_DESCRIPTIONS["CDL_ENGULFING"], "strength": 3})
+        elif pc > po and c < o and c < po and o > pc:
+            detected.append({"name": "Bearish Engulfing", "direction": "Bearish 🔴", "description": CANDLE_DESCRIPTIONS["CDL_ENGULFING"], "strength": 3})
+
+        # Marubozu: no or tiny shadows
+        if upper_shadow / total_range < 0.05 and lower_shadow / total_range < 0.05:
+            direction = "Bullish 🟢" if c > o else "Bearish 🔴"
+            detected.append({"name": "Marubozu", "direction": direction, "description": CANDLE_DESCRIPTIONS["CDL_MARUBOZU"], "strength": 3})
+
     except Exception:
-        # Fallback: try individual patterns
-        individual_patterns = ["doji", "hammer", "engulfing", "morningstar", "eveningstar", "harami"]
-        for pattern in individual_patterns:
-            try:
-                result = df.ta.cdl_pattern(name=pattern)
-                if result is not None and not result.empty:
-                    val = result.iloc[-1].iloc[0]
-                    if pd.notna(val) and val != 0:
-                        cdl_key = f"CDL_{pattern.upper()}"
-                        desc = CANDLE_DESCRIPTIONS.get(cdl_key, f"{pattern.title()} pattern detected")
-                        direction = "Bullish 🟢" if val > 0 else "Bearish 🔴"
-                        detected.append({
-                            "name": pattern.title(),
-                            "direction": direction,
-                            "description": desc,
-                            "strength": abs(int(val)),
-                        })
-            except Exception:
-                continue
+        pass
     return detected
 
 
@@ -181,7 +185,7 @@ def run_backtests(df: pd.DataFrame) -> list:
     def rsi_oversold_check(w):
         if len(w) < 16:
             return False
-        rsi_vals = ta.rsi(w['Close'], length=14)
+        rsi_vals = ta_lib.momentum.RSIIndicator(close=w['Close'], window=14).rsi()
         if rsi_vals is None or rsi_vals.iloc[-1] is None:
             return False
         return float(rsi_vals.iloc[-1]) < 30
@@ -202,6 +206,27 @@ def run_backtests(df: pd.DataFrame) -> list:
         results.append(r)
 
     return results
+
+
+# ─── Helper: Calculate all indicators using `ta` library ──────────────────────
+
+def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    """Add RSI, MACD, SMA, Bollinger Bands columns using the `ta` library."""
+    df['RSI_14'] = ta_lib.momentum.RSIIndicator(close=df['Close'], window=14).rsi()
+
+    macd_indicator = ta_lib.trend.MACD(close=df['Close'])
+    df['MACD_12_26_9'] = macd_indicator.macd()
+    df['MACDs_12_26_9'] = macd_indicator.macd_signal()
+    df['MACDh_12_26_9'] = macd_indicator.macd_diff()
+
+    df['SMA_20'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=20).sma_indicator()
+    df['SMA_50'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=50).sma_indicator()
+
+    bb = ta_lib.volatility.BollingerBands(close=df['Close'], window=20)
+    df['BBU_20'] = bb.bollinger_hband()
+    df['BBL_20'] = bb.bollinger_lband()
+
+    return df
 
 
 # ─── Main Tool ────────────────────────────────────────────────────────────────
@@ -226,12 +251,8 @@ def chart_pattern(ticker: str) -> str:
         if df.empty or len(df) < 20:
             return f"Not enough data for {clean} to detect patterns."
 
-        # Calculate indicators
-        df.ta.rsi(length=14, append=True)
-        df.ta.macd(append=True)
-        df.ta.sma(length=20, append=True)
-        df.ta.sma(length=50, append=True)
-        df.ta.bbands(length=20, append=True)
+        # Calculate indicators using ta library
+        df = calculate_indicators(df)
 
         latest = df.iloc[-1]
         prev = df.iloc[-2]
@@ -239,26 +260,19 @@ def chart_pattern(ticker: str) -> str:
         current_price = round(float(latest['Close']), 2)
 
         # RSI
-        rsi_col = [c for c in df.columns if 'RSI' in c]
-        rsi = round(float(latest[rsi_col[0]]), 2) if rsi_col else None
+        rsi = round(float(latest['RSI_14']), 2) if not pd.isna(latest['RSI_14']) else None
 
         # MACD
-        macd_col = [c for c in df.columns if 'MACD_12' in c and 'Signal' not in c and 'Hist' not in c]
-        signal_col = [c for c in df.columns if 'MACDs' in c]
-        macd = round(float(latest[macd_col[0]]), 2) if macd_col else None
-        signal = round(float(latest[signal_col[0]]), 2) if signal_col else None
+        macd = round(float(latest['MACD_12_26_9']), 2) if not pd.isna(latest['MACD_12_26_9']) else None
+        signal = round(float(latest['MACDs_12_26_9']), 2) if not pd.isna(latest['MACDs_12_26_9']) else None
 
         # SMAs
-        sma20_col = [c for c in df.columns if 'SMA_20' in c]
-        sma50_col = [c for c in df.columns if 'SMA_50' in c]
-        sma20 = round(float(latest[sma20_col[0]]), 2) if sma20_col else None
-        sma50 = round(float(latest[sma50_col[0]]), 2) if sma50_col else None
+        sma20 = round(float(latest['SMA_20']), 2) if not pd.isna(latest['SMA_20']) else None
+        sma50 = round(float(latest['SMA_50']), 2) if not pd.isna(latest['SMA_50']) else None
 
         # Bollinger Bands
-        bbu_col = [c for c in df.columns if 'BBU' in c]
-        bbl_col = [c for c in df.columns if 'BBL' in c]
-        bb_upper = round(float(latest[bbu_col[0]]), 2) if bbu_col else None
-        bb_lower = round(float(latest[bbl_col[0]]), 2) if bbl_col else None
+        bb_upper = round(float(latest['BBU_20']), 2) if not pd.isna(latest['BBU_20']) else None
+        bb_lower = round(float(latest['BBL_20']), 2) if not pd.isna(latest['BBL_20']) else None
 
         # Support & Resistance (20-day high/low)
         high_20 = round(float(df['High'].tail(20).max()), 2)
@@ -284,8 +298,8 @@ def chart_pattern(ticker: str) -> str:
 
         # Golden/Death cross
         if sma20 and sma50:
-            prev_sma20 = round(float(prev[sma20_col[0]]), 2) if sma20_col else None
-            prev_sma50 = round(float(prev[sma50_col[0]]), 2) if sma50_col else None
+            prev_sma20 = round(float(prev['SMA_20']), 2) if not pd.isna(prev['SMA_20']) else None
+            prev_sma50 = round(float(prev['SMA_50']), 2) if not pd.isna(prev['SMA_50']) else None
             if prev_sma20 and prev_sma50:
                 if prev_sma20 < prev_sma50 and sma20 > sma50:
                     patterns.append("⭐ Golden Cross detected — strong bullish signal")
@@ -323,15 +337,14 @@ def chart_pattern(ticker: str) -> str:
             elif current_price < bb_lower:
                 patterns.append("📊 Price below lower Bollinger Band — oversold zone")
 
-        # ── NEW: Candlestick Pattern Detection ───────────────────────────
+        # ── Candlestick Pattern Detection ─────────────────────────────────
         candle_patterns = detect_candlestick_patterns(df)
 
-        # ── NEW: RSI Divergence Detection ────────────────────────────────
+        # ── RSI Divergence Detection ──────────────────────────────────────
         divergences = []
-        if rsi_col:
-            divergences = detect_rsi_divergence(df, rsi_col[0])
+        divergences = detect_rsi_divergence(df, 'RSI_14')
 
-        # ── NEW: Backtested Success Rates ────────────────────────────────
+        # ── Backtested Success Rates ──────────────────────────────────────
         backtests = run_backtests(df)
 
         # ── Build Output ─────────────────────────────────────────────────
