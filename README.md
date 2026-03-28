@@ -109,7 +109,7 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 | **Frontend** | Next.js 15, React 19, TypeScript | App framework |
 | **Styling** | TailwindCSS, shadcn/ui, Radix UI | UI components |
 | **Charts** | Plotly.js, Recharts | Interactive visualizations |
-| **Auth** | Firebase Authentication | Google sign-in |
+| **Auth** | Firebase Authentication | Google , Email/Password |
 | **Database** | Firebase Firestore | User data persistence |
 | **Backend** | FastAPI, Python 3.11, Uvicorn | REST API server |
 | **AI/LLM** | Sarvam AI (sarvam-105b) | Indian LLM for analysis |
@@ -148,8 +148,8 @@ marketvalve/
 │   ├── app/                    # Next.js App Router pages
 │   │   ├── page.tsx            # Dashboard (home)
 │   │   ├── ai/                 # AI Chat full-page
-│   │   ├── alerts/             # Market Signals
-│   │   ├── performance/        # Chart Pattern Intelligence
+│   │   ├── market-signals/     # Market Signals
+│   │   ├── chart-analysis/     # Chart Analysis Intelligence
 │   │   ├── portfolio/          # Portfolio (stocks + MF)
 │   │   ├── radar/              # Opportunity Radar
 │   │   ├── scanner/            # Universe Scanner
