@@ -11,7 +11,7 @@ faiss-cpu
 beautifulsoup4
 requests
 pandas<2.2.0
-pandas-ta==0.3.14b0
+pandas-ta @ git+https://github.com/twopirllc/pandas-ta.git
 numpy<2.0.0
 python-dotenv
 smartapi-python
