@@ -10,9 +10,9 @@ langchain-huggingface
 faiss-cpu
 beautifulsoup4
 requests
-pandas
-pandas-ta
-numpy
+pandas<2.2.0
+pandas-ta==0.3.14b0
+numpy<2.0.0
 python-dotenv
 smartapi-python
 pyotp
