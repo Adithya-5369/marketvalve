@@ -174,6 +174,8 @@ marketvalve/
 └── README.md                   # This file
 ```
 
+---
+
 ## ⚖️ Regulatory & SEBI Compliance Roadmap
 
 MarketValve is built as an educational prototype for the **ET Gen AI Hackathon**. Understanding the strict regulatory landscape of Indian fintech, we have designed our architecture with SEBI compliance in mind:
@@ -233,7 +235,7 @@ MarketValve uses **Firebase** for secure user authentication and **Cloud Firesto
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Adithya5369/marketvalve.git
+git clone https://github.com/Adithya-5369/marketvalve.git
 cd marketvalve
 ```
 
