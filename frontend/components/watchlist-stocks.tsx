@@ -22,7 +22,7 @@ interface WatchlistItem {
   error?: string
 }
 
-const POPULAR = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "WIPRO", "BAJFINANCE","TATAMOTORS","ADANIENT"]
+const POPULAR = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "SBIN", "WIPRO", "BAJFINANCE", "TMPV", "ADANIENT"]
 
 export function WatchlistStocks() {
   const { user } = useAuth()

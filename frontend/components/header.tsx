@@ -12,14 +12,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Try to import auth - gracefully handle if not available
-let useAuth: any = () => ({ user: null, logout: () => {} })
-try { useAuth = require("@/components/auth-provider").useAuth } catch {}
+let useAuth: any = () => ({ user: null, logout: () => { } })
+try { useAuth = require("@/components/auth-provider").useAuth } catch { }
 
 const POPULAR_STOCKS = [
   "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK",
   "WIPRO", "SBIN", "BAJFINANCE", "HINDUNILVR", "ITC",
   "BHARTIARTL", "KOTAKBANK", "LT", "AXISBANK", "MARUTI",
-  "TATAMOTORS", "SUNPHARMA", "TITAN", "ADANIENT", "TECHM",
+  "TMPV", "SUNPHARMA", "TITAN", "ADANIENT", "TECHM",
   "HCLTECH", "DRREDDY", "NESTLEIND", "BAJAJ-AUTO", "M&M",
   "NTPC", "ONGC", "POWERGRID", "COALINDIA", "JSWSTEEL",
   "TATASTEEL", "ULTRACEMCO", "CIPLA", "DIVISLAB", "GRASIM",

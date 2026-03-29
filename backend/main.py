@@ -74,7 +74,7 @@ NIFTY_STOCKS = [
     {"ticker": "SBIN.NS", "name": "State Bank of India"},
     {"ticker": "BAJFINANCE.NS", "name": "Bajaj Finance"},
     {"ticker": "HINDUNILVR.NS", "name": "Hindustan Unilever"},
-    {"ticker": "TATAMOTORS.NS", "name": "Tata Motors"},
+    {"ticker": "TMPV.NS", "name": "Tata Motors Passenger Vhcls Ltd"},
     {"ticker": "ADANIENT.NS", "name": "Adani Enterprises"},
     {"ticker": "ADANIPORTS.NS", "name": "Adani Ports"},
     {"ticker": "APOLLOHOSP.NS", "name": "Apollo Hospitals"},
@@ -277,10 +277,8 @@ async def get_chart_data(ticker: str, period: str = "3mo"):
         clean = ticker.upper().replace(".NS", "")
         stock = yf.Ticker(f"{clean}.NS")
         df = stock.history(period=period)
-        
         if df.empty:
             return {"error": "No data found"}
-
         df['SMA_20'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=20).sma_indicator()
         df['SMA_50'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=50).sma_indicator()
         bb = ta_lib.volatility.BollingerBands(close=df['Close'], window=20)
