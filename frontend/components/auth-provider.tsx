@@ -38,15 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!user) return; // Only prompt if logged in
-      e.preventDefault();
-      e.returnValue = ''; // Trigger the native browser confirmation dialog
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [user]);
+
 
   const router = useRouter()
   const pathname = usePathname()

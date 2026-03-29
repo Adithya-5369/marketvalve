@@ -43,8 +43,22 @@ export default function AIChat() {
   const [mfPortfolio, setMfPortfolio] = useState<any[]>([]);
   const hasLoadedRef = useRef(false);
 
+  const panelRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (isOpen && panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        // Ignore if clicking the toggle button itself
+        const toggle = document.querySelector('.chat-toggle-btn');
+        if (toggle && toggle.contains(e.target as Node)) return;
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,13 +195,13 @@ export default function AIChat() {
         .chat-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground)/0.3); border-radius: 2px; }
       `}</style>
 
-      <button onClick={() => setIsOpen(!isOpen)} className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 bg-background border border-border">
+      <button onClick={() => setIsOpen(!isOpen)} className="chat-toggle-btn fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 bg-background border border-border">
         {hasNew && !isOpen && <span className="absolute top-1 right-1 w-3 h-3 bg-destructive rounded-full border-2 border-background" />}
         {isOpen ? <X className="w-5 h-5 text-muted-foreground" /> : <MarketValveLogo className="w-8 h-8" />}
       </button>
 
       {isOpen && (
-        <div className={`chat-panel fixed z-50 flex flex-col rounded-2xl overflow-hidden bg-background border border-border shadow-2xl transition-all duration-300 ease-in-out ${
+        <div ref={panelRef} className={`chat-panel fixed z-50 flex flex-col rounded-2xl overflow-hidden bg-background border border-border shadow-2xl transition-all duration-300 ease-in-out ${
           isExpanded ? "bottom-4 right-4 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] md:bottom-12 md:right-12 md:w-[700px] md:h-[calc(100vh-6rem)]" 
           : "bottom-24 right-6 w-[440px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-8rem)]"
         }`}>

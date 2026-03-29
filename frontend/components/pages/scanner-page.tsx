@@ -202,7 +202,7 @@ export function ScannerPage() {
                       <div
                         key={i}
                         className="p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => router.push(`/performance?stock=${alert.symbol}`)}
+                        onClick={() => router.push(`/chart-analysis?stock=${alert.symbol}`)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">

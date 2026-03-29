@@ -178,6 +178,45 @@ marketvalve/
 
 ## 🚀 Getting Started
 
+### 📦 Database & Authentication Setup
+
+MarketValve uses **Firebase** for secure user authentication and **Cloud Firestore** for persisting portfolio data across devices.
+
+#### 1. Create a Firebase Project
+1. Go to the [Firebase Console](https://console.firebase.google.com/) and click **Add Project**.
+2. Give it a name (e.g., `MarketValve-AI`) and follow the setup wizard.
+
+#### 2. Enable Authentication
+1. In the left sidebar, click **Build** → **Authentication**.
+2. Click **Get Started** and enable **Google** under the "Sign-in method" tab.
+3. Configure your support email and click **Save**.
+
+#### 3. Setup Cloud Firestore
+1. In the left sidebar, click **Build** → **Firestore Database**.
+2. Click **Create Database**.
+3. Choose a location close to you (e.g., `asia-south1` for India).
+4. Start in **Production Mode**.
+5. Click **Rules** and update them to allow users to access only their own data:
+   ```js
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId}/{document=**} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+       }
+     }
+   }
+   ```
+   *Note: Our code uses the structure `users/{uid}/data/{collection_name}`.*
+
+#### 4. Get Your Config Variables
+1. Click the **Project Settings** (gear icon) → **General**.
+2. Scroll to "Your apps" and click the **Web icon (</>)**.
+3. Register your app (e.g., `marketvalve-web`).
+4. Copy the `firebaseConfig` values into your `frontend/.env.local` file.
+
+---
+
 ### Prerequisites
 - **Node.js** 18+ and npm
 - **Python** 3.11+

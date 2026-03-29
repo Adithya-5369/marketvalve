@@ -38,8 +38,7 @@ export function PortfolioPage() {
   const [mfSearch, setMfSearch] = useState("")
   const [mfResults, setMfResults] = useState<any[]>([])
   const [mfSearching, setMfSearching] = useState(false)
-  const [newUnits, setNewUnits] = useState("")
-  const [newInvested, setNewInvested] = useState("")
+  const [mfInputs, setMfInputs] = useState<Record<string, { units: string, invested: string }>>({})
 
   const stockKey = user ? userKey(user.uid, "portfolio_stocks") : "mv_portfolio_stocks"
   const mfKey = user ? userKey(user.uid, "portfolio_mf") : "mv_portfolio_mf"
@@ -113,14 +112,18 @@ export function PortfolioPage() {
 
   function addMF(fund: any) {
     if (mfs.find(m => m.scheme_code === String(fund.schemeCode))) return
+    const inputs = mfInputs[fund.schemeCode] || { units: "0", invested: "0" }
     const updated = [...mfs, {
       scheme_code: String(fund.schemeCode),
       scheme_name: fund.schemeName || "",
-      invested: parseFloat(newInvested) || 0,
-      units: parseFloat(newUnits) || 0,
+      invested: parseFloat(inputs.invested) || 0,
+      units: parseFloat(inputs.units) || 0,
     }]
     saveMfs(updated)
-    setNewUnits(""); setNewInvested(""); setMfResults([]); setMfSearch("")
+    const newInputs = { ...mfInputs }
+    delete newInputs[fund.schemeCode]
+    setMfInputs(newInputs)
+    setMfResults([]); setMfSearch("")
     fetchMFNavs(updated)
   }
 
@@ -164,7 +167,7 @@ export function PortfolioPage() {
   const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-32">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Portfolio</h1>
         <p className="text-muted-foreground">Track your stocks & mutual funds with live P&L.</p>
@@ -305,8 +308,18 @@ export function PortfolioPage() {
                     <div key={i} className="p-2 rounded border border-border hover:bg-muted/50 text-xs">
                       <div className="font-medium leading-tight mb-1.5 line-clamp-2">{fund.schemeName}</div>
                       <div className="flex items-center gap-1.5">
-                        <Input placeholder="Units" className="h-7 w-16 text-xs" value={newUnits} onChange={e => setNewUnits(e.target.value)} />
-                        <Input placeholder="₹ Invested" className="h-7 w-20 text-xs" value={newInvested} onChange={e => setNewInvested(e.target.value)} />
+                        <Input
+                          placeholder="Units"
+                          className="h-7 w-16 text-xs"
+                          value={mfInputs[fund.schemeCode]?.units || ""}
+                          onChange={e => setMfInputs({ ...mfInputs, [fund.schemeCode]: { ...(mfInputs[fund.schemeCode] || { invested: "" }), units: e.target.value } })}
+                        />
+                        <Input
+                          placeholder="₹ Invested"
+                          className="h-7 w-20 text-xs"
+                          value={mfInputs[fund.schemeCode]?.invested || ""}
+                          onChange={e => setMfInputs({ ...mfInputs, [fund.schemeCode]: { ...(mfInputs[fund.schemeCode] || { units: "" }), invested: e.target.value } })}
+                        />
                         <Button size="sm" className="h-7 text-xs px-2" onClick={() => addMF(fund)}>Add</Button>
                       </div>
                     </div>

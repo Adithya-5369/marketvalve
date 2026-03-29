@@ -20,8 +20,7 @@ export function PortfolioMFPage() {
   const [mfSearch, setMfSearch] = useState("")
   const [mfResults, setMfResults] = useState<any[]>([])
   const [mfSearching, setMfSearching] = useState(false)
-  const [newUnits, setNewUnits] = useState("")
-  const [newInvested, setNewInvested] = useState("")
+  const [mfInputs, setMfInputs] = useState<Record<string, { units: string, invested: string }>>({})
   const [refreshing, setRefreshing] = useState(false)
 
   const mfKey = user ? userKey(user.uid, "portfolio_mf") : "mv_portfolio_mf"
@@ -51,14 +50,18 @@ export function PortfolioMFPage() {
 
   function addMF(fund: any) {
     if (mfs.find(m => m.scheme_code === String(fund.schemeCode))) return
+    const inputs = mfInputs[fund.schemeCode] || { units: "0", invested: "0" }
     const updated = [...mfs, {
       scheme_code: String(fund.schemeCode),
       scheme_name: fund.schemeName || "",
-      invested: parseFloat(newInvested) || 0,
-      units: parseFloat(newUnits) || 0,
+      invested: parseFloat(inputs.invested) || 0,
+      units: parseFloat(inputs.units) || 0,
     }]
     saveMfs(updated)
-    setNewUnits(""); setNewInvested(""); setMfResults([]); setMfSearch("")
+    const newInputs = { ...mfInputs }
+    delete newInputs[fund.schemeCode]
+    setMfInputs(newInputs)
+    setMfResults([]); setMfSearch("")
     fetchMFNavs(updated)
   }
 
@@ -93,7 +96,7 @@ export function PortfolioMFPage() {
   const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-32">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Mutual Funds</h1>
@@ -148,8 +151,18 @@ export function PortfolioMFPage() {
                 <div key={i} className="p-2.5 rounded-lg border border-border hover:bg-muted/50 text-xs">
                   <div className="font-medium leading-tight mb-2 line-clamp-2">{fund.schemeName}</div>
                   <div className="flex items-center gap-2">
-                    <Input placeholder="Units" className="h-7 w-20 text-xs" value={newUnits} onChange={e => setNewUnits(e.target.value)} />
-                    <Input placeholder="₹ Invested" className="h-7 w-24 text-xs" value={newInvested} onChange={e => setNewInvested(e.target.value)} />
+                    <Input
+                      placeholder="Units"
+                      className="h-7 w-20 text-xs"
+                      value={mfInputs[fund.schemeCode]?.units || ""}
+                      onChange={e => setMfInputs({ ...mfInputs, [fund.schemeCode]: { ...(mfInputs[fund.schemeCode] || { invested: "" }), units: e.target.value } })}
+                    />
+                    <Input
+                      placeholder="₹ Invested"
+                      className="h-7 w-24 text-xs"
+                      value={mfInputs[fund.schemeCode]?.invested || ""}
+                      onChange={e => setMfInputs({ ...mfInputs, [fund.schemeCode]: { ...(mfInputs[fund.schemeCode] || { units: "" }), invested: e.target.value } })}
+                    />
                     <Button size="sm" className="h-7 text-xs" onClick={() => addMF(fund)}>
                       <Plus className="h-3 w-3 mr-1" /> Add
                     </Button>
