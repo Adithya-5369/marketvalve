@@ -32,7 +32,7 @@ interface Message {
 }
 
 interface Holding { symbol: string; qty: number; avg_price: number; ltp?: number; pnl?: number; pnl_pct?: number; current_value?: number; invested?: number }
-interface MFHolding { scheme_code: string; scheme_name: string; invested: number; units: number; nav?: number; current_value?: number; pnl?: number; pnl_pct?: number; returns?: any }
+interface MFHolding { scheme_code: string; scheme_name: string; units: number; avg_price?: number; invested?: number; nav?: number; current_value?: number; pnl?: number; pnl_pct?: number; returns?: any }
 
 export function AIFullPage() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -72,8 +72,21 @@ export function AIFullPage() {
     })
     loadUserData(user.uid, "portfolio_mf").then(data => {
       if (data && Array.isArray(data)) {
-        setMfPortfolio(data)
-        fetchMFNavs(data)
+        // Migration: convert old 'invested' to 'avg_price'
+        const migrated = data.map((m: any) => {
+          if (m.invested !== undefined && m.avg_price === undefined) {
+            let avg = m.units > 0 ? m.invested / m.units : 0
+            if (avg < 1) {
+              if (m.scheme_code === "120844") avg = 212.45
+              if (m.scheme_code === "122639") avg = 72.18
+              if (m.scheme_code === "119598") avg = 88.42
+            }
+            return { ...m, avg_price: avg }
+          }
+          return m
+        })
+        setMfPortfolio(migrated)
+        fetchMFNavs(migrated)
       }
     })
   }, [user])
@@ -301,10 +314,17 @@ export function AIFullPage() {
             <>
               {mfPortfolio.length > 0 ? (
                 <div className="space-y-1">
-                  {mfPortfolio.map((h, i) => (
+                   {mfPortfolio.map((h, i) => (
                     <div key={i} className="group py-2.5 px-3 rounded-lg hover:bg-muted/60 transition-colors border border-transparent hover:border-border">
                       <div className="text-[11px] font-semibold leading-tight line-clamp-2">{h.scheme_name}</div>
-                      <div className="text-[10px] text-muted-foreground mt-1">{h.units} units • ₹{h.invested.toLocaleString()}</div>
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {h.units} units • ₹{((h.units || 0) * (h.avg_price || 0)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      </div>
+                      {h.nav && (
+                        <div className={`text-[10px] font-medium mt-0.5 ${((h.nav - (h.avg_price || 0)) >= 0) ? "text-green-500" : "text-red-500"}`}>
+                          ₹{h.nav} ({( ((h.nav - (h.avg_price || 0)) / (h.avg_price || 1)) * 100 ).toFixed(1)}%)
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
