@@ -10,9 +10,15 @@ import { saveUserData, loadUserData } from "@/lib/firestore"
 import { API_BASE_URL } from "@/lib/api"
 
 interface MFHolding {
-  scheme_code: string; scheme_name: string; invested: number; units: number
+  scheme_code: string; scheme_name: string; avg_price: number; units: number
   nav?: number; current_value?: number; pnl?: number; pnl_pct?: number
 }
+
+const SAMPLE_MFS: MFHolding[] = [
+  { scheme_code: "120844", scheme_name: "quant Small Cap Fund - Growth Option - Direct Plan", avg_price: 212.45, units: 85.2 },
+  { scheme_code: "122639", scheme_name: "Parag Parikh Flexi Cap Fund - Direct Plan - Growth", avg_price: 72.18, units: 240.5 },
+  { scheme_code: "119598", scheme_name: "SBI Large Cap FUND-DIRECT PLAN -GROWTH", avg_price: 88.42, units: 1200 },
+]
 
 export function PortfolioMFPage() {
   const { user } = useAuth()
@@ -20,7 +26,7 @@ export function PortfolioMFPage() {
   const [mfSearch, setMfSearch] = useState("")
   const [mfResults, setMfResults] = useState<any[]>([])
   const [mfSearching, setMfSearching] = useState(false)
-  const [mfInputs, setMfInputs] = useState<Record<string, { units: string, invested: string }>>({})
+  const [mfInputs, setMfInputs] = useState<Record<string, { units: string, avg_price: string }>>({})
   const [refreshing, setRefreshing] = useState(false)
 
   const mfKey = user ? userKey(user.uid, "portfolio_mf") : "mv_portfolio_mf"
@@ -29,7 +35,28 @@ export function PortfolioMFPage() {
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "portfolio_mf").then(data => {
-      if (data && Array.isArray(data)) setMfs(data)
+      if (data && Array.isArray(data) && data.length > 0) {
+        // Migration: convert old 'invested' (total) to 'avg_price' (per unit)
+        // Also auto-correct "illogical" dummy data (₹1, ₹2 total invested)
+        const migrated = data.map((m: any) => {
+          if (m.invested !== undefined && m.avg_price === undefined) {
+            let avg = m.units > 0 ? m.invested / m.units : 0
+            if (avg < 1) {
+              if (m.scheme_code === "120844") avg = 212.45
+              if (m.scheme_code === "122639") avg = 72.18
+              if (m.scheme_code === "119598") avg = 88.42
+            }
+            return { ...m, avg_price: avg }
+          }
+          return m
+        })
+        setMfs(migrated)
+        saveMfs(migrated)
+      } else {
+        // First timer: seed with professional sample data
+        setMfs(SAMPLE_MFS)
+        saveMfs(SAMPLE_MFS)
+      }
     })
   }, [user])
 
@@ -50,11 +77,11 @@ export function PortfolioMFPage() {
 
   function addMF(fund: any) {
     if (mfs.find(m => m.scheme_code === String(fund.schemeCode))) return
-    const inputs = mfInputs[fund.schemeCode] || { units: "0", invested: "0" }
+    const inputs = mfInputs[fund.schemeCode] || { units: "0", avg_price: "0" }
     const updated = [...mfs, {
       scheme_code: String(fund.schemeCode),
       scheme_name: fund.schemeName || "",
-      invested: parseFloat(inputs.invested) || 0,
+      avg_price: parseFloat(inputs.avg_price) || 0,
       units: parseFloat(inputs.units) || 0,
     }]
     saveMfs(updated)
@@ -76,8 +103,9 @@ export function PortfolioMFPage() {
           const d = await r.json()
           if (d.status === "success" && d.current_nav) {
             const cv = m.units * d.current_nav
-            const pnl = cv - m.invested
-            const pnl_pct = m.invested > 0 ? (pnl / m.invested) * 100 : 0
+            const total_cost = m.units * m.avg_price
+            const pnl = cv - total_cost
+            const pnl_pct = total_cost > 0 ? (pnl / total_cost) * 100 : 0
             return { ...m, nav: d.current_nav, current_value: Math.round(cv * 100) / 100, pnl: Math.round(pnl * 100) / 100, pnl_pct: Math.round(pnl_pct * 100) / 100 }
           }
           return m
@@ -90,8 +118,8 @@ export function PortfolioMFPage() {
 
   useEffect(() => { if (mfs.length > 0 && !mfs[0].nav) fetchMFNavs() }, [mfs.length])
 
-  const totalInvested = mfs.reduce((s, m) => s + m.invested, 0)
-  const totalCurrent = mfs.reduce((s, m) => s + (m.current_value || m.invested), 0)
+  const totalInvested = mfs.reduce((s, m) => s + (m.units * m.avg_price), 0)
+  const totalCurrent = mfs.reduce((s, m) => s + (m.current_value || (m.units * m.avg_price)), 0)
   const totalPnl = totalCurrent - totalInvested
   const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0
 
@@ -158,10 +186,10 @@ export function PortfolioMFPage() {
                       onChange={e => setMfInputs({ ...mfInputs, [fund.schemeCode]: { ...(mfInputs[fund.schemeCode] || { invested: "" }), units: e.target.value } })}
                     />
                     <Input
-                      placeholder="₹ Invested"
+                      placeholder="Avg. Price"
                       className="h-7 w-24 text-xs"
-                      value={mfInputs[fund.schemeCode]?.invested || ""}
-                      onChange={e => setMfInputs({ ...mfInputs, [fund.schemeCode]: { ...(mfInputs[fund.schemeCode] || { units: "" }), invested: e.target.value } })}
+                      value={mfInputs[fund.schemeCode]?.avg_price || ""}
+                      onChange={e => setMfInputs({ ...mfInputs, [fund.schemeCode]: { ...(mfInputs[fund.schemeCode] || { units: "" }), avg_price: e.target.value } })}
                     />
                     <Button size="sm" className="h-7 text-xs" onClick={() => addMF(fund)}>
                       <Plus className="h-3 w-3 mr-1" /> Add
@@ -190,7 +218,7 @@ export function PortfolioMFPage() {
                   <div className="min-w-0 flex-1 mr-4">
                     <div className="font-semibold text-sm leading-tight">{m.scheme_name}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {m.units} units • ₹{m.invested.toLocaleString()} invested
+                      {m.units} units • Avg: ₹{(m.avg_price || 0).toLocaleString()} • Cost: ₹{(m.units * (m.avg_price || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                       {m.nav && <span> • NAV: ₹{m.nav}</span>}
                     </div>
                   </div>

@@ -74,7 +74,9 @@ export function WatchlistStocks() {
 
   function saveSymbols(newItems: WatchlistItem[]) {
     setItems(newItems)
-    localStorage.setItem(storageKey, JSON.stringify(newItems.map(i => i.symbol)))
+    const symbols = newItems.map(i => i.symbol)
+    if (user) saveUserData(user.uid, "watchlist", symbols)
+    else localStorage.setItem(storageKey, JSON.stringify(symbols))
   }
 
   function addStock() {

@@ -69,6 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
+    if (user) {
+      // Clear user-specific locally cached data
+      const keys = Object.keys(localStorage)
+      const u = user.uid
+      keys.forEach(k => {
+        if (k.startsWith(`mv_${u}`) || k.startsWith(`mv_chat_${u}`) || k.startsWith(`mv_chat_mini_${u}`)) {
+          localStorage.removeItem(k)
+        }
+      })
+    }
     await signOut(auth)
     router.push("/")
   }
