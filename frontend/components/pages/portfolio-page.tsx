@@ -22,18 +22,7 @@ interface MFHolding {
   nav?: number; current_value?: number; pnl?: number; pnl_pct?: number
 }
 
-const SAMPLE_STOCKS: StockHolding[] = [
-  { symbol: "RELIANCE", qty: 25, avg_price: 2450.50 },
-  { symbol: "TCS", qty: 15, avg_price: 3820.15 },
-  { symbol: "HDFCBANK", qty: 120, avg_price: 1420.80 },
-  { symbol: "INFY", qty: 45, avg_price: 1610.25 },
-]
 
-const SAMPLE_MFS: MFHolding[] = [
-  { scheme_code: "120844", scheme_name: "quant Small Cap Fund - Growth Option - Direct Plan", avg_price: 212.45, units: 85.2 },
-  { scheme_code: "122639", scheme_name: "Parag Parikh Flexi Cap Fund - Direct Plan - Growth", avg_price: 72.18, units: 240.5 },
-  { scheme_code: "119598", scheme_name: "SBI Large Cap FUND-DIRECT PLAN -GROWTH", avg_price: 88.42, units: 1200 },
-]
 
 export function PortfolioPage() {
   const { user } = useAuth()
@@ -60,34 +49,25 @@ export function PortfolioPage() {
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "portfolio_stocks").then(data => {
-      if (data && Array.isArray(data) && data.length > 0) {
+      if (data && Array.isArray(data)) {
         setStocks(data)
       } else {
-        setStocks(SAMPLE_STOCKS)
-        saveStocks(SAMPLE_STOCKS)
+        setStocks([])
       }
     })
     loadUserData(user.uid, "portfolio_mf").then(data => {
-      if (data && Array.isArray(data) && data.length > 0) {
+      if (data && Array.isArray(data)) {
         // Migration: convert old 'invested' (total) to 'avg_price' (per unit)
-        // Also auto-correct "illogical" dummy data (₹1, ₹2 total invested)
         const migrated = data.map((m: any) => {
           if (m.invested !== undefined && m.avg_price === undefined) {
             let avg = m.units > 0 ? m.invested / m.units : 0
-            if (avg < 1) {
-              if (m.scheme_code === "120844") avg = 212.45
-              if (m.scheme_code === "122639") avg = 72.18
-              if (m.scheme_code === "119598") avg = 88.42
-            }
             return { ...m, avg_price: avg }
           }
           return m
         })
         setMfs(migrated)
-        saveMfs(migrated)
       } else {
-        setMfs(SAMPLE_MFS)
-        saveMfs(SAMPLE_MFS)
+        setMfs([])
       }
     })
   }, [user])
