@@ -1,9 +1,12 @@
 import requests
+import json
+import os
+import re
+import traceback
 from bs4 import BeautifulSoup
 from datetime import datetime
-from langchain_core.tools import tool
-import json, os
 from dotenv import load_dotenv
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -36,6 +39,8 @@ def _get_sentiment_llm():
 
 SENTIMENT_PROMPT = """You are a financial sentiment analyst for the Indian stock market.
 Analyze each news headline and return a JSON array with one object per headline.
+IMPORTANT: Do NOT use <think> tags. Return ONLY a valid JSON array immediately.
+No reasoning, no explanation — just the JSON array.
 
 For EACH headline return:
 - "index": the headline number (0-based)
@@ -81,7 +86,6 @@ def _save_sentiment_cache(results: dict):
 
 
 def _analyze_sentiment_batch(headlines: list[str]) -> list[dict]:
-    """Send a batch of headlines to Groq LLM for sentiment analysis."""
     if not headlines:
         return []
 
@@ -95,12 +99,39 @@ def _analyze_sentiment_batch(headlines: list[str]) -> list[dict]:
         ])
 
         text = response.content.strip()
-        # Strip markdown fences if present
-        if text.startswith("```"):
-            text = text.split("\n", 1)[1]
-            text = text.rsplit("```", 1)[0]
 
-        return json.loads(text)
+        # Guard: empty response
+        if not text:
+            print("Sentiment analysis: empty response from model")
+            return []
+
+        if "<think>" in text and "</think>" not in text:
+            # Model cut off — try to extract any JSON after the think tag
+            after_think = text.split("<think>")[-1]
+            json_match = re.search(r'\[[\s\S]*\]', after_think)
+            if json_match:
+                text = json_match.group(0)
+            else:
+                return []
+
+        # Strip markdown fences if present
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+
+        # Guard: not JSON
+        if not text.startswith("["):
+            print(f"Sentiment analysis: unexpected format: {text[:100]}")
+            return []
+
+        parsed = json.loads(text)
+        return parsed if isinstance(parsed, list) else []
+
+    except json.JSONDecodeError as e:
+        print(f"Sentiment analysis error: {e}")
+        return []
     except Exception as e:
         print(f"Sentiment analysis error: {e}")
         return []
@@ -285,11 +316,14 @@ def detect_signals(articles, query_upper):
             uncached_indices.append(i)
 
     new_results = {}
-    batch_size = 15
+    batch_size = 5
     for batch_start in range(0, len(uncached_articles), batch_size):
         batch = uncached_articles[batch_start:batch_start + batch_size]
         headlines = [a["title"] for a in batch]
         ai_results = _analyze_sentiment_batch(headlines)
+
+        if not ai_results:
+            ai_results = []
 
         for result in ai_results:
             idx = result.get("index", 0)
@@ -667,6 +701,5 @@ def opportunity_radar(query: str) -> str:
         return output
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return f"Error in opportunity radar: {str(e)}"

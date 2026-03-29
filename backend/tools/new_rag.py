@@ -1,22 +1,15 @@
+from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
+import traceback
 from langchain_core.tools import tool
 from rag.vector_store import get_vector_store
-from datetime import datetime, timedelta
 
 @tool
 def news_rag(query: str) -> str:
-    """
-    Searches latest ET Markets news articles relevant to the query.
-    Use this for any question about recent news, events, or developments
-    related to Indian stocks, sectors, or market trends.
-    Always cite the article title and source in your response.
-    """
+    """Searches latest ET Markets news articles relevant to the query."""
     try:
         vs = get_vector_store()
         results = vs.similarity_search(query, k=5)
-
-        from datetime import datetime, timedelta
-        from email.utils import parsedate_to_datetime
-
         cutoff = datetime.now(tz=datetime.now().astimezone().tzinfo) - timedelta(days=7)
 
         def is_recent(doc):
@@ -52,6 +45,5 @@ def news_rag(query: str) -> str:
 
         return output
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return f"Error fetching news: {str(e)}"

@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import ta as ta_lib
 import numpy as np
+import traceback
 from langchain_core.tools import tool
 
 
@@ -362,6 +363,5 @@ def chart_pattern(ticker: str) -> str:
         return output
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return f"Error analyzing {ticker}: {str(e)}"

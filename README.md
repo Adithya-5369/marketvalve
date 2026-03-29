@@ -85,7 +85,7 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 - AI-powered pattern analysis narrative
 
 ### 🔍 Universe Scanner
-- Scans entire **Nifty 50 / 200 / 500** universe
+- Scans entire **Nifty 50 / Bank Nifty / Fin Nifty / Midcap Nifty ** universe
 - Detects: RSI oversold/overbought, MACD crossovers, SMA crossovers, volume spikes, breakouts/breakdowns
 - Click any result to view its full chart analysis
 
@@ -261,7 +261,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 | `GET` | `/quote/{symbol}` | Single stock quote with price, change, volume, market cap |
 | `GET` | `/chart/{ticker}` | OHLCV + technical indicators (SMA, BB, RSI) |
 | `GET` | `/radar?stock=ALL` | Opportunity radar - deals, filings, insider trades, sentiment |
-| `GET` | `/scan?scope=nifty200` | Universe scanner - technical signal detection |
+| `GET` | `/scan?scope=nifty50` | Universe scanner - technical signal detection |
 | `POST` | `/chat` | AI chat - multi-step reasoning with portfolio context |
 | `GET` | `/mf/search?q=` | Search mutual funds (40K+ schemes) |
 | `GET` | `/mf/nav/{code}` | Get mutual fund NAV |

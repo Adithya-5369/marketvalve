@@ -77,10 +77,7 @@ Formatting rules (IMPORTANT):
 
 
 def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
-    """
-    Run the MarketValve agent with conversation history and portfolio context.
-    Returns a dict with 'response', 'sources', and 'reasoning_steps'.
-    """
+    """Run MarketValve agent with portfolio and history context."""
     portfolio_ctx = ""
     if portfolio and len(portfolio) > 0:
         holdings = []

@@ -134,11 +134,6 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/settings",
       icon: Settings,
     },
-    // ── Hidden from sidebar (pages still accessible via URL) ──
-    // { title: "Sectors", href: "/sectors", icon: PieChart },
-    // { title: "Transactions", href: "/transactions", icon: CreditCard },
-    // { title: "Budget", href: "/budget", icon: DollarSign },
-    // { title: "Forecast", href: "/forecast", icon: LineChart },
   ]
 
   return (

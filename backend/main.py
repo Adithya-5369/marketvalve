@@ -4,13 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from agents.market_agent import run_agent
 import yfinance as yf
+import ta as ta_lib
+import numpy as np
 from tools.opportunity_radar import (
     fetch_nse_direct_deals, fetch_market_news, detect_signals,
     fetch_corporate_filings, fetch_insider_trades, fetch_quarterly_results,
     fetch_management_commentary
 )
 from datetime import datetime
-import math
+from tools.mutual_funds import search_mutual_funds, get_fund_nav, analyze_fund_portfolio
 
 def safe_float(x):
     try:
@@ -40,12 +42,9 @@ async def get_quote(symbol: str):
     """Get live price for a single NSE stock."""
     ticker = symbol.upper()
     if not ticker.endswith(".NS"):
-        ticker = ticker + ".NS"
+        ticker += ".NS"
     try:
-        from curl_cffi import requests as curl_requests
-        s = curl_requests.Session(impersonate="chrome")
-        import yfinance as yf
-        t = yf.Ticker(ticker, session=s)
+        t = yf.Ticker(ticker)
         info = t.fast_info
         hist = t.history(period="2d")
         if hist.empty:
@@ -180,7 +179,6 @@ def fetch_all_nifty50_live():
             
     except Exception as e:
         print(f"Index Tracker fetch error: {e}")
-        
     return []
 
 @app.get("/stocks")
@@ -274,28 +272,21 @@ def fetch_all_indices_live():
 
 @app.get("/chart/{ticker}")
 async def get_chart_data(ticker: str, period: str = "3mo"):
+    """Fetch historical chart data with technical indicators."""
     try:
         clean = ticker.upper().replace(".NS", "")
-        stock = yf.Ticker(clean + ".NS")
+        stock = yf.Ticker(f"{clean}.NS")
         df = stock.history(period=period)
         
         if df.empty:
             return {"error": "No data found"}
 
-        import ta as ta_lib
         df['SMA_20'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=20).sma_indicator()
         df['SMA_50'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=50).sma_indicator()
         bb = ta_lib.volatility.BollingerBands(close=df['Close'], window=20)
         df['BBU_20'] = bb.bollinger_hband()
         df['BBL_20'] = bb.bollinger_lband()
         df['RSI_14'] = ta_lib.momentum.RSIIndicator(close=df['Close'], window=14).rsi()
-
-        # Find column names
-        sma20 = [c for c in df.columns if 'SMA_20' in c]
-        sma50 = [c for c in df.columns if 'SMA_50' in c]
-        bbu = [c for c in df.columns if 'BBU' in c]
-        bbl = [c for c in df.columns if 'BBL' in c]
-        rsi = [c for c in df.columns if 'RSI' in c]
 
         dates = df.index.strftime("%Y-%m-%d").tolist()
 
@@ -309,11 +300,11 @@ async def get_chart_data(ticker: str, period: str = "3mo"):
                 "close": [safe_float(x) for x in df['Close']],
             },
             "volume": [safe_int(x) for x in df['Volume']],
-            "sma20":  [safe_float(x) for x in df[sma20[0]]] if sma20 else [],
-            "sma50":  [safe_float(x) for x in df[sma50[0]]] if sma50 else [],
-            "bb_upper": [safe_float(x) for x in df[bbu[0]]] if bbu else [],
-            "bb_lower": [safe_float(x) for x in df[bbl[0]]] if bbl else [],
-            "rsi": [safe_float(x) for x in df[rsi[0]]] if rsi else [],
+            "sma20":  [safe_float(x) for x in df['SMA_20'].tolist()],
+            "sma50":  [safe_float(x) for x in df['SMA_50'].tolist()],
+            "bb_upper": [safe_float(x) for x in df['BBU_20'].tolist()],
+            "bb_lower": [safe_float(x) for x in df['BBL_20'].tolist()],
+            "rsi": [safe_float(x) for x in df['RSI_14'].tolist()],
         }
     except Exception as e:
         return {"error": str(e)}
@@ -367,22 +358,15 @@ def fetch_nse_stock_list(index_name: str = "NIFTY 200") -> list:
 
 @app.get("/scan")
 async def scan_nse_universe(scope: str = "nifty200"):
-    """
-    Scan NSE stocks for technical pattern signals.
-    scope: nifty50, nifty200, nifty500 (default: nifty200)
-    """
-    import ta as ta_lib
-    import numpy as np
-
+    """Scan NSE stocks for technical pattern signals."""
     # Map scope to NSE index name
     index_map = {
-        "nifty50": "NIFTY 50",
-        "nifty200": "NIFTY 200",
-        "nifty500": "NIFTY 500",
+        "nifty50":     "NIFTY 50",
+        "banknifty":   "NIFTY BANK",
+        "finnifty":    "NIFTY FIN SERVICE",
+        "midcapnifty": "NIFTY MIDCAP 50",
     }
     index_name = index_map.get(scope.lower(), "NIFTY 200")
-
-    # Fetch stock list from NSE API
     tickers = fetch_nse_stock_list(index_name)
     
 
@@ -404,7 +388,7 @@ async def scan_nse_universe(scope: str = "nifty200"):
             scanned += 1
             price = round(float(df['Close'].iloc[-1]), 2)
 
-            # Calculate indicators using ta library
+            # Calculate indicators
             df['RSI_14'] = ta_lib.momentum.RSIIndicator(close=df['Close'], window=14).rsi()
             macd_ind = ta_lib.trend.MACD(close=df['Close'])
             df['MACD_12_26_9'] = macd_ind.macd()
@@ -412,30 +396,24 @@ async def scan_nse_universe(scope: str = "nifty200"):
             df['SMA_20'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=20).sma_indicator()
             df['SMA_50'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=50).sma_indicator()
 
-            rsi_col = [c for c in df.columns if 'RSI' in c]
-            macd_col = [c for c in df.columns if 'MACD_12' in c and 'Signal' not in c and 'Hist' not in c]
-            signal_col = [c for c in df.columns if 'MACDs' in c]
-            sma20_col = [c for c in df.columns if 'SMA_20' in c]
-            sma50_col = [c for c in df.columns if 'SMA_50' in c]
-
-            rsi = float(df[rsi_col[0]].iloc[-1]) if rsi_col and not np.isnan(df[rsi_col[0]].iloc[-1]) else None
-            macd_val = float(df[macd_col[0]].iloc[-1]) if macd_col and not np.isnan(df[macd_col[0]].iloc[-1]) else None
-            signal_val = float(df[signal_col[0]].iloc[-1]) if signal_col and not np.isnan(df[signal_col[0]].iloc[-1]) else None
-            sma20 = float(df[sma20_col[0]].iloc[-1]) if sma20_col and not np.isnan(df[sma20_col[0]].iloc[-1]) else None
-            sma50 = float(df[sma50_col[0]].iloc[-1]) if sma50_col and not np.isnan(df[sma50_col[0]].iloc[-1]) else None
+            rsi = float(df['RSI_14'].iloc[-1]) if not np.isnan(df['RSI_14'].iloc[-1]) else None
+            macd_val = float(df['MACD_12_26_9'].iloc[-1]) if not np.isnan(df['MACD_12_26_9'].iloc[-1]) else None
+            signal_val = float(df['MACDs_12_26_9'].iloc[-1]) if not np.isnan(df['MACDs_12_26_9'].iloc[-1]) else None
+            sma20 = float(df['SMA_20'].iloc[-1]) if not np.isnan(df['SMA_20'].iloc[-1]) else None
+            sma50 = float(df['SMA_50'].iloc[-1]) if not np.isnan(df['SMA_50'].iloc[-1]) else None
 
             signals_found = []
 
-            # RSI oversold/overbought
+            # Technical Analysis Signals
             if rsi and rsi < 30:
-                signals_found.append({"type": "RSI Oversold", "detail": f"RSI at {round(rsi, 1)}", "direction": "bullish"})
+                signals_found.append({"type": "RSI Oversold", "detail": f"RSI: {round(rsi, 1)}", "direction": "bullish"})
             elif rsi and rsi > 70:
-                signals_found.append({"type": "RSI Overbought", "detail": f"RSI at {round(rsi, 1)}", "direction": "bearish"})
+                signals_found.append({"type": "RSI Overbought", "detail": f"RSI: {round(rsi, 1)}", "direction": "bearish"})
 
             # MACD crossover
             if macd_val and signal_val:
-                prev_macd = float(df[macd_col[0]].iloc[-2]) if not np.isnan(df[macd_col[0]].iloc[-2]) else None
-                prev_signal = float(df[signal_col[0]].iloc[-2]) if not np.isnan(df[signal_col[0]].iloc[-2]) else None
+                prev_macd = float(df['MACD_12_26_9'].iloc[-2]) if not np.isnan(df['MACD_12_26_9'].iloc[-2]) else None
+                prev_signal = float(df['MACDs_12_26_9'].iloc[-2]) if not np.isnan(df['MACDs_12_26_9'].iloc[-2]) else None
                 if prev_macd and prev_signal:
                     if prev_macd < prev_signal and macd_val > signal_val:
                         signals_found.append({"type": "MACD Bullish Cross", "detail": "MACD crossed above signal", "direction": "bullish"})
@@ -444,8 +422,8 @@ async def scan_nse_universe(scope: str = "nifty200"):
 
             # Golden/Death cross
             if sma20 and sma50:
-                prev_sma20 = float(df[sma20_col[0]].iloc[-2]) if not np.isnan(df[sma20_col[0]].iloc[-2]) else None
-                prev_sma50 = float(df[sma50_col[0]].iloc[-2]) if not np.isnan(df[sma50_col[0]].iloc[-2]) else None
+                prev_sma20 = float(df['SMA_20'].iloc[-2]) if not np.isnan(df['SMA_20'].iloc[-2]) else None
+                prev_sma50 = float(df['SMA_50'].iloc[-2]) if not np.isnan(df['SMA_50'].iloc[-2]) else None
                 if prev_sma20 and prev_sma50:
                     if prev_sma20 < prev_sma50 and sma20 > sma50:
                         signals_found.append({"type": "Golden Cross", "detail": "20 SMA crossed above 50 SMA", "direction": "bullish"})
@@ -530,10 +508,6 @@ async def broker_orders():
 async def broker_status():
     return {"connected": is_connected()}
 
-
-
-from tools.mutual_funds import search_mutual_funds, get_fund_nav, analyze_fund_portfolio
-
 @app.get("/mf/search")
 async def mf_search(q: str = ""):
     if not q:
@@ -549,4 +523,4 @@ class MFPortfolio(BaseModel):
 
 @app.post("/mf/analyze")
 async def mf_analyze(portfolio: MFPortfolio):
-    return analyze_fund_portfolio(portfolio.holdings)
+    return analyze_fund_portfolio(portfolio.holdings)
