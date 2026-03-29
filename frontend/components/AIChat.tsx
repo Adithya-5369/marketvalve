@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { API_BASE_URL } from "@/lib/api";
 import { MarketValveLogo } from "@/components/logo";
-import { Maximize2, Minimize2, ExternalLink, Briefcase, X, Send } from "lucide-react";
+import { Maximize2, Minimize2, ExternalLink, Briefcase, X, Send, Zap, Shield } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { loadUserData } from "@/lib/firestore";
 import Link from "next/link";
@@ -239,10 +239,10 @@ export default function AIChat() {
                 {msg.role === "assistant" && (msg.reasoning_steps?.length || msg.sources?.length) && (
                   <div className="ml-8 mt-1.5 space-y-1">
                     {msg.reasoning_steps && msg.reasoning_steps.length > 0 && (
-                      <div className="flex flex-wrap gap-1">{msg.reasoning_steps.map((step, j) => (<span key={j} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">🔍 {step}</span>))}</div>
+                      <div className="flex flex-wrap gap-1">{msg.reasoning_steps.map((step, j) => (<span key={j} className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20"><Zap className="h-2.5 w-2.5" />{step}</span>))}</div>
                     )}
                     {msg.sources && msg.sources.length > 0 && (
-                      <div className="flex flex-wrap gap-1">{msg.sources.map((src, j) => (<span key={j} className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">📋 {src}</span>))}</div>
+                      <div className="flex flex-wrap gap-1">{msg.sources.map((src, j) => (<span key={j} className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border"><Shield className="h-2.5 w-2.5 text-green-500" />{src}</span>))}</div>
                     )}
                   </div>
                 )}

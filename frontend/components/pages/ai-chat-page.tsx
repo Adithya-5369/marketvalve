@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Send, RefreshCw, Briefcase, TrendingUp,
-  X, Zap, Shield, MessageSquare, ExternalLink
+  X, Zap, Shield, MessageSquare, ExternalLink,
+  BarChart4, Search, TrendingDown, Scale, FileText, Coins
 } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { loadUserData } from "@/lib/firestore"
@@ -14,12 +15,12 @@ import { MarketValveLogo } from "@/components/logo"
 import Link from "next/link"
 
 const SUGGESTIONS = [
-  { text: "Full analysis of RELIANCE", emoji: "📊" },
-  { text: "Are insiders buying TCS?", emoji: "🔍" },
-  { text: "Nifty stocks oversold right now?", emoji: "📉" },
-  { text: "Compare INFY vs TCS technicals", emoji: "⚔️" },
-  { text: "Deals and filings for HDFCBANK", emoji: "📋" },
-  { text: "Best performing mutual funds?", emoji: "💰" },
+  { text: "Full analysis of RELIANCE", icon: <BarChart4 className="h-4 w-4 text-blue-500" /> },
+  { text: "Are insiders buying TCS?", icon: <Search className="h-4 w-4 text-amber-500" /> },
+  { text: "Nifty stocks oversold right now?", icon: <TrendingDown className="h-4 w-4 text-red-500" /> },
+  { text: "Compare INFY vs TCS technicals", icon: <Scale className="h-4 w-4 text-purple-500" /> },
+  { text: "Deals and filings for HDFCBANK", icon: <FileText className="h-4 w-4 text-green-500" /> },
+  { text: "Best performing mutual funds?", icon: <Coins className="h-4 w-4 text-yellow-600" /> },
 ]
 
 interface Message {
@@ -131,7 +132,7 @@ export function AIFullPage() {
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => setMessages([])}><RefreshCw className="h-3 w-3 mr-1.5" /> New Chat</Button>
+          <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => { setMessages([]); if (user) localStorage.removeItem(`mv_chat_${user.uid}`) }}><RefreshCw className="h-3 w-3 mr-1.5" /> New Chat</Button>
         </div>
 
         <div className="flex-1 overflow-y-auto chat-scroll px-6 py-5">
@@ -143,7 +144,9 @@ export function AIFullPage() {
               <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
                 {SUGGESTIONS.map((s, i) => (
                   <button key={i} onClick={() => sendMessage(s.text)} className="group flex items-center gap-3 text-left px-4 py-3.5 rounded-xl border border-border bg-background hover:bg-muted hover:border-primary/30 hover:shadow-sm transition-all duration-200">
-                    <span className="text-lg shrink-0">{s.emoji}</span>
+                    <div className="p-2 rounded-lg bg-muted group-hover:bg-background transition-colors">
+                      {s.icon}
+                    </div>
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">{s.text}</span>
                   </button>
                 ))}

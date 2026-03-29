@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   RefreshCw, TrendingUp, TrendingDown,
-  AlertCircle, BarChart3, FileText, Users, BarChart, Mic, X
+  AlertCircle, BarChart3, FileText, Users, BarChart, Mic, X,
+  Presentation, Phone, Target, ClipboardList, Rocket, Briefcase
 } from "lucide-react"
 import { API_BASE_URL } from "@/lib/api"
 
@@ -304,16 +305,19 @@ export function RadarPage({ initialStock }: { initialStock?: string }) {
           <CardContent>
             <div className="space-y-2">
               {commentary.map((c, i) => {
-                const typeIcon: Record<string, string> = {
-                  "Investor Presentation": "📊", "Earnings Call": "📞",
-                  "Guidance Update": "🎯", "MD&A": "📝",
-                  "Strategy Update": "🚀", "Management Update": "💼",
+                const typeIcon: Record<string, React.ReactNode> = {
+                  "Investor Presentation": <Presentation className="h-4 w-4 text-blue-500" />,
+                  "Earnings Call": <Phone className="h-4 w-4 text-green-500" />,
+                  "Guidance Update": <Target className="h-4 w-4 text-amber-500" />,
+                  "MD&A": <ClipboardList className="h-4 w-4 text-purple-500" />,
+                  "Strategy Update": <Rocket className="h-4 w-4 text-orange-500" />,
+                  "Management Update": <Briefcase className="h-4 w-4 text-slate-500" />,
                 }
                 return (
                   <div key={i} className="p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span>{typeIcon[c.type] || "💼"}</span>
+                        <span>{typeIcon[c.type] || <Briefcase className="h-4 w-4 text-slate-500" />}</span>
                         <span className="font-semibold text-sm">{c.symbol}</span>
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">{c.type}</Badge>
                       </div>

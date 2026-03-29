@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
   Search, TrendingUp, TrendingDown, BarChart2,
-  RefreshCw, Activity, Target, Zap, ArrowUpRight, ArrowDownRight
+  RefreshCw, Activity, Target, Zap, ArrowUpRight, ArrowDownRight, AlertCircle
 } from "lucide-react"
 import { API_BASE_URL } from "@/lib/api"
 
@@ -144,7 +144,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold tracking-tight">
-          📊 Chart Pattern Intelligence
+          Chart Pattern Intelligence
         </h1>
         <CardDescription className="flex items-center gap-1.5 pt-1">
           AI-powered technical analysis with live NSE charts • candlesticks, RSI, Bollinger Bands, and smart signals.
@@ -377,7 +377,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
             {/* Period note for indicators */}
             {period === "1mo" && (showSMA || showBB) && (
               <p className="text-xs text-amber-500 mt-2 flex items-center gap-1">
-                ⚠ 1M period has limited data for SMA/Bollinger. Use 3M+ for full indicator coverage.
+                <AlertCircle className="h-3 w-3" /> 1M period has limited data for SMA/Bollinger. Use 3M+ for full indicator coverage.
               </p>
             )}
           </CardHeader>
