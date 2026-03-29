@@ -26,9 +26,9 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 - 📊 **Live NSE market data** - prices, indices, bulk/block deals, insider trades, corporate filings
 - 🔍 **AI sentiment analysis** on ET Markets & Moneycontrol news articles
 - 📈 **Technical chart intelligence** - candlestick charts, RSI, MACD, Bollinger Bands, SMA crossovers
-- 💼 **Portfolio-aware AI** - personalized insights based on your holdings
-- 🔗 **Broker integration** - connect Angel One / Groww / Upstox to auto-import portfolio
-- 📋 **Source-cited responses** - every AI answer includes data provenance
+- **Portfolio-aware AI** - personalized insights based on your holdings
+- **Source-cited responses** - every AI answer includes data provenance
+- **Secure Persistence** - automatic sign-out on tab closure with "Leave site?" guards
 
 > **Key differentiator:** Unlike generic chatbots, MarketValve chains multiple data tools in sequence (multi-step reasoning) to deliver comprehensive, portfolio-aware analysis with full source citations.
 
@@ -58,7 +58,7 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 
 ### 🤖 AI Chat - Multi-Step Reasoning Engine
 - Conversational AI powered by **Sarvam 105B** (Indian LLM)
-- Chains up to **5 tools sequentially** for deep analysis
+- Chains up to **8 tools sequentially** for deep analysis
 - Portfolio-aware: references your holdings in responses
 - Multi-turn conversation with history context
 - Full-page AI chat + floating chat widget
@@ -90,10 +90,9 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 - Click any result to view its full chart analysis
 
 ### 💼 Portfolio Tracker
-- **Stocks**: Add NSE holdings, track live P&L
+- **Stocks**: Add NSE holdings manually, track live P&L and corporate actions
 - **Mutual Funds**: Search 40,000+ schemes via MFAPI.in, track NAV & returns
-- **Broker Connect**: Import holdings from Angel One / Groww / Upstox via API
-- Data persisted via **Firebase Firestore** (per-user)
+- **Live Sync**: Data persisted via **Firebase Firestore** (per-user) and live-synced to the AI Copilot
 
 ### 👁️ Watchlist & Price Alerts
 - Custom stock watchlist with live prices
@@ -107,9 +106,10 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | **Frontend** | Next.js 15, React 19, TypeScript | App framework |
-| **Styling** | TailwindCSS, shadcn/ui, Radix UI | UI components |
+| **Styling** | Vanilla CSS + Tailwind, shadcn/ui | UI components |
 | **Charts** | Plotly.js, Recharts | Interactive visualizations |
-| **Auth** | Firebase Authentication | Google , Email/Password |
+| **Auth** | Firebase Auth (Session-based) | Secure Google & Email Login |
+| **Security** | beforeunload + Persistence Guard | Tab closure & redirect logic |
 | **Database** | Firebase Firestore | User data persistence |
 | **Backend** | FastAPI, Python 3.11, Uvicorn | REST API server |
 | **AI/LLM** | Sarvam AI (sarvam-105b) | Indian LLM for analysis |
@@ -138,8 +138,7 @@ marketvalve/
 │   │   ├── opportunity_radar.py # Deals, filings, insider trades, sentiment
 │   │   ├── chart_pattern.py    # Technical analysis engine
 │   │   ├── new_rag.py          # News RAG (ET Markets + Moneycontrol)
-│   │   ├── mutual_funds.py     # MF search, NAV, portfolio analysis
-│   │   └── broker_integration.py # Angel One / Groww / Upstox API
+│   │   └── mutual_funds.py     # MF search, NAV, portfolio analysis
 │   └── rag/
 │       ├── news_fetcher.py     # Web scraping for financial news
 │       └── vector_store.py     # FAISS vector store for RAG
@@ -265,9 +264,6 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 | `POST` | `/chat` | AI chat - multi-step reasoning with portfolio context |
 | `GET` | `/mf/search?q=` | Search mutual funds (40K+ schemes) |
 | `GET` | `/mf/nav/{code}` | Get mutual fund NAV |
-| `POST` | `/broker/connect` | Connect broker (Angel One / Groww / Upstox) |
-| `GET` | `/broker/holdings` | Fetch broker holdings |
-| `GET` | `/broker/status` | Check broker connection status |
 
 ---
 
@@ -310,14 +306,14 @@ User Query: "Full analysis of RELIANCE"
 
 | Feature | ET Markets ChatGPT | MarketValve AI |
 |---------|-------------------|----------------|
-| Multi-step reasoning | ❌ Single query | ✅ Chains up to 5 tools |
+| Multi-step reasoning | ❌ Single query | ✅ Chains up to 8+ tools |
 | Portfolio-aware | ❌ No portfolio context | ✅ References your holdings |
 | Source citations | ❌ No sources | ✅ Every response cites sources |
 | Live NSE data | ⚠️ Limited | ✅ Full Nifty 50/200/500 |
 | Insider trades | ❌ | ✅ Direct from NSE India |
 | Technical charts | ❌ | ✅ Interactive candlestick + indicators |
 | Universe scanner | ❌ | ✅ Scan entire Nifty index |
-| Broker integration | ❌ | ✅ Angel One / Groww / Upstox |
+| Secure Session | ⚠️ Basic | ✅ Tab closure auto-logout |
 | Mutual funds | ❌ | ✅ 40,000+ schemes with NAV |
 | Indian LLM | ❌ OpenAI | ✅ Sarvam AI (Indian context) |
 

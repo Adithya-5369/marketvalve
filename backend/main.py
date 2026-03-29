@@ -467,44 +467,6 @@ async def scan_nse_universe(scope: str = "nifty200"):
 
 
 
-from tools.broker_integration import (
-    connect_angel_one, connect_with_totp_secret,
-    fetch_holdings, fetch_positions, fetch_order_book,
-    is_connected, disconnect
-)
-
-class BrokerConnect(BaseModel):
-    client_id: str
-    password: str
-    api_key: str
-    totp: str = ""
-    totp_secret: str = ""
-
-@app.post("/broker/connect")
-async def broker_connect(creds: BrokerConnect):
-    if creds.totp_secret:
-        return connect_with_totp_secret(creds.client_id, creds.password, creds.api_key, creds.totp_secret)
-    return connect_angel_one(creds.client_id, creds.password, creds.api_key, creds.totp)
-
-@app.post("/broker/disconnect")
-async def broker_disconnect():
-    return disconnect()
-
-@app.get("/broker/holdings")
-async def broker_holdings():
-    return fetch_holdings()
-
-@app.get("/broker/positions")
-async def broker_positions():
-    return fetch_positions()
-
-@app.get("/broker/orders")
-async def broker_orders():
-    return fetch_order_book()
-
-@app.get("/broker/status")
-async def broker_status():
-    return {"connected": is_connected()}
 
 @app.get("/mf/search")
 async def mf_search(q: str = ""):

@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app"
-import { getAuth, GoogleAuthProvider } from "firebase/auth"
+import { getAuth, GoogleAuthProvider, setPersistence, browserSessionPersistence } from "firebase/auth"
 
 // Firebase config — replace with your project values from Firebase Console
 // Go to: console.firebase.google.com → Create project → Authentication → Enable Google Sign-In
@@ -15,5 +15,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
+setPersistence(auth, browserSessionPersistence)
 export const googleProvider = new GoogleAuthProvider()
 export default app

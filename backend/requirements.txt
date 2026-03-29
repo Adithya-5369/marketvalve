@@ -14,7 +14,4 @@ pandas
 ta
 numpy
 python-dotenv
-smartapi-python
-pyotp
-langgraph
 lxml

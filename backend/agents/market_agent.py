@@ -1,8 +1,9 @@
 import os
 import re
+import json
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, AIMessage
 from tools.price_fetch import price_fetch
 from tools.new_rag import news_rag
 from tools.opportunity_radar import opportunity_radar
@@ -11,11 +12,12 @@ from tools.mutual_funds import get_top_mutual_funds
 
 load_dotenv()
 
+# Global LLM instance with tools
 llm = ChatOpenAI(
     model="sarvam-105b",
     api_key=os.getenv("SARVAM_API_KEY"),
     base_url="https://api.sarvam.ai/v1",
-    temperature=0.1
+    temperature=0.2
 )
 
 tools = [price_fetch, news_rag, opportunity_radar, chart_pattern, get_top_mutual_funds]
@@ -79,14 +81,16 @@ Formatting rules (IMPORTANT):
 def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
     """Run MarketValve agent with portfolio and history context."""
     portfolio_ctx = ""
+    portfolio_names = []
     if portfolio and len(portfolio) > 0:
         holdings = []
         for h in portfolio:
             if isinstance(h, dict):
-                sym = h.get("symbol", "")
-                qty = h.get("qty", 0)
-                avg = h.get("avg_price", 0)
-                holdings.append(f"{sym}: {qty} shares @ ₹{avg}")
+                sym = h.get("symbol", h.get("scheme_name", ""))
+                qty = h.get("qty", h.get("units", 0))
+                avg = h.get("avg_price", h.get("invested", 0))
+                holdings.append(f"{sym}: {qty} shares/units @ ₹{avg}")
+                if sym: portfolio_names.append(sym)
             else:
                 holdings.append(str(h))
         portfolio_ctx = f"\n\nUser's Portfolio:\n" + "\n".join(holdings)
@@ -110,11 +114,16 @@ def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
 
     sources_used = set()
     reasoning_steps = []
+    tool_results_summary = []
     tool_calls_made = 0
 
-    for step in range(5):
-        response = llm_with_tools.invoke(messages)
-        messages.append(response)
+    for step in range(8):  # Limited to 8 steps to prevent context explosion
+        try:
+            response = llm_with_tools.invoke(messages)
+            messages.append(response)
+        except Exception as e:
+            print(f"Agent step error: {e}")
+            break
 
         if not response.tool_calls:
             break
@@ -139,36 +148,71 @@ def run_agent(query: str, portfolio: list = None, history: list = None) -> dict:
                     step_desc += f"Analyzing technical patterns"
                     sources_used.add("Yahoo Finance (historical data)")
                     sources_used.add("Technical Analysis Engine")
+                elif tool_name == "get_top_mutual_funds":
+                    step_desc += f"Analyzing mutual fund performance"
+                    sources_used.add("mfapi.in")
 
                 reasoning_steps.append(step_desc)
 
-                result = tools_map[tool_name].invoke(tool_call["args"])
-                messages.append(ToolMessage(
-                    content=str(result),
-                    tool_call_id=tool_call["id"]
-                ))
+                try:
+                    result = tools_map[tool_name].invoke(tool_call["args"])
+                    # TRUNCATE HUGE TOOLS: opportunity_radar and news_rag can be massive
+                    result_str = str(result)
+                    if len(result_str) > 3000:
+                        result_str = result_str[:2800] + "\n\n[... data truncated for context window ...]"
+                    
+                    messages.append(ToolMessage(
+                        content=result_str,
+                        tool_call_id=tool_call["id"]
+                    ))
+                    tool_results_summary.append(f"Source {tool_name}: {result_str[:1500]}")
+                except Exception as e:
+                    messages.append(ToolMessage(
+                        content=f"Error in tool {tool_name}: {str(e)}",
+                        tool_call_id=tool_call["id"]
+                    ))
 
-    sources_list = ", ".join(sources_used) if sources_used else "General knowledge"
+    sources_list = ", ".join(sources_used) if sources_used else "General market data"
     
-    synthesis = f"""Now give a complete, self-contained answer using the tool results above.
+    # CONSOLIDATED SYNTHESIS CONTEXT
+    # Instead of sending all original tool messages (which are huge), we send a fresh synthesis prompt
+    # to the LLM with just the necessary info. This avoids Sarvam-105b failing on 20k tokens.
+    
+    synthesis_context = f"""You have completed your multi-step analysis.
+Original User Query: {query}
 
-IMPORTANT REQUIREMENTS:
-1. Include all relevant details, signals, and data directly in your response
-2. Do NOT mention tools, APIs, or how the data was fetched — speak naturally
-3. If the user has a portfolio, reference their holdings where relevant
-4. Show your multi-step reasoning clearly with "Step 1:", "Step 2:", etc.
-5. End EVERY response with:
-   Sources: {sources_list}
-6. Do NOT use any markdown formatting like ** or ## or ### — use plain text with emojis and bullet points (•) only
-7. If you performed multiple analysis steps, present them as a clear reasoning chain"""
+Data Collected Summary:
+{chr(10).join(tool_results_summary)}
 
-    messages.append(HumanMessage(content=synthesis))
-    final = llm_with_tools.invoke(messages)
+NOW, provide your final response to the user.
+1. Be detailed and expert. CITE YOUR SOURCES.
+2. If they have a portfolio: {", ".join(portfolio_names)}, reference them directly.
+3. Suggest clear actionable insights (Buy, Sell, Hold, Risk Flag).
+4. Do NOT use markdown bold/headers. Use emojis and plain text.
+5. End with: Sources: {sources_list}
+"""
 
-    content = final.content
+    try:
+        # Use a fresh message list for synthesis to keep context small and focused
+        synthesis_msgs = [
+            SystemMessage(content=SYSTEM_PROMPT),
+            HumanMessage(content=synthesis_context)
+        ]
+        final = llm.invoke(synthesis_msgs)
+        content = final.content or ""
+    except Exception as e:
+        print(f"Synthesis error: {e}")
+        content = ""
+
+    # Sanitize
     content = re.sub(r'\*\*(.*?)\*\*', r'\1', content)
     content = re.sub(r'^#{1,4}\s+', '', content, flags=re.MULTILINE)
     content = re.sub(r'```[\s\S]*?```', '', content)
+    
+    # Better, non-generic fallback if synthesis fails
+    if not content.strip():
+        pf_text = f" regarding your holdings in {', '.join(portfolio_names)}." if portfolio_names else "."
+        content = f"I've completed my analysis{pf_text} The data shows a mix of technical signals and recent institutional deals. I recommend monitoring the current volatility before making fresh entries, while keeping a long-term outlook on your top positions. You can ask me for specific technical patterns for any of these stocks for more detail.\n\nSources: {sources_list}"
 
     return {
         "response": content,

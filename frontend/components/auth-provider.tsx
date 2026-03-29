@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import { User, signInWithPopup, signOut, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
 import { auth, googleProvider } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
@@ -38,12 +39,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!user) return; // Only prompt if logged in
+      e.preventDefault();
+      e.returnValue = ''; // Trigger the native browser confirmation dialog
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [user]);
+
+  const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user)
       setLoading(false)
+      
+      // If user logs out while on a deep page, push them back to home
+      if (!user && pathname !== "/" && pathname !== "") {
+        router.push("/")
+      }
     })
     return unsubscribe
-  }, [])
+  }, [pathname, router])
 
   async function signInWithGoogle() {
     try { await signInWithPopup(auth, googleProvider) } catch (error: any) { console.error("Auth error:", error.message) }
@@ -59,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     await signOut(auth)
+    router.push("/")
   }
 
   async function resetPassword(email: string) {
