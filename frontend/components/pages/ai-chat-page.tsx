@@ -65,12 +65,53 @@ export function AIFullPage() {
   useEffect(() => {
     if (!user) return
     loadUserData(user.uid, "portfolio_stocks").then(data => {
-      if (data && Array.isArray(data)) setPortfolio(data)
+      if (data && Array.isArray(data)) {
+        setPortfolio(data)
+        fetchStockPrices(data)
+      }
     })
     loadUserData(user.uid, "portfolio_mf").then(data => {
-      if (data && Array.isArray(data)) setMfPortfolio(data)
+      if (data && Array.isArray(data)) {
+        setMfPortfolio(data)
+        fetchMFNavs(data)
+      }
     })
   }, [user])
+
+  async function fetchStockPrices(list: Holding[]) {
+    const updated = await Promise.all(
+      list.map(async (h) => {
+        try {
+          const r = await fetch(`${API_BASE_URL}/quote/${h.symbol}`)
+          const d = await r.json()
+          if (d.status === "success" && d.price) {
+            const invested = h.qty * h.avg_price
+            const pnl = (h.qty * d.price) - invested
+            const pnl_pct = invested > 0 ? (pnl / invested) * 100 : 0
+            return { ...h, ltp: d.price, pnl, pnl_pct }
+          }
+          return h
+        } catch { return h }
+      })
+    )
+    setPortfolio(updated)
+  }
+
+  async function fetchMFNavs(list: MFHolding[]) {
+    const updated = await Promise.all(
+      list.map(async (m) => {
+        try {
+          const r = await fetch(`${API_BASE_URL}/mf/nav/${m.scheme_code}`)
+          const d = await r.json()
+          if (d.status === "success" && d.current_nav) {
+            return { ...m, nav: d.current_nav }
+          }
+          return m
+        } catch { return m }
+      })
+    )
+    setMfPortfolio(updated)
+  }
 
   function renderContent(text: string) {
     const urlRegex = /(https?:\/\/[^\s)]+)/g

@@ -37,15 +37,48 @@ app.add_middleware(
 
 
 
+def fetch_nse_quote(symbol: str):
+    """Fetch real-time quote directly from NSE."""
+    try:
+        session = requests.Session(impersonate="chrome")
+        headers = {
+            "accept": "application/json, text/javascript, */*; q=0.01",
+            "referer": f"https://www.nseindia.com/get-quotes/equity?symbol={symbol}",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+        }
+        session.get("https://www.nseindia.com", headers=headers, timeout=10)
+        url = f"https://www.nseindia.com/api/quote-equity?symbol={symbol.upper()}"
+        res = session.get(url, headers=headers, timeout=10)
+        
+        if res.status_code == 200:
+            data = res.json()
+            price_info = data.get("priceInfo", {})
+            return {
+                "status": "success",
+                "symbol": symbol.upper(),
+                "price": price_info.get("lastPrice", 0),
+                "change": price_info.get("change", 0),
+                "change_pct": price_info.get("pChange", 0),
+                "volume": data.get("securityWiseDP", {}).get("quantityTraded", 0)
+            }
+    except Exception as e:
+        print(f"NSE Quote fetch error for {symbol}: {e}")
+    return None
+
 @app.get("/quote/{symbol}")
 async def get_quote(symbol: str):
     """Get live price for a single NSE stock."""
+    # Try NSE Direct first for 100% accuracy
+    nse_data = fetch_nse_quote(symbol)
+    if nse_data:
+        return nse_data
+        
+    # Fallback to yfinance if NSE is blocked/down
     ticker = symbol.upper()
     if not ticker.endswith(".NS"):
         ticker += ".NS"
     try:
         t = yf.Ticker(ticker)
-        info = t.fast_info
         hist = t.history(period="2d")
         if hist.empty:
             return {"status": "error", "message": f"No data for {symbol}"}
@@ -53,12 +86,10 @@ async def get_quote(symbol: str):
         prev = safe_float(hist["Close"].iloc[-2]) if len(hist) > 1 else price
         change = round(price - prev, 2) if price and prev else 0
         change_pct = round((change / prev) * 100, 2) if prev else 0
-        vol = safe_int(hist["Volume"].iloc[-1])
         return {
             "status": "success", "symbol": symbol.upper().replace(".NS", ""),
             "price": round(price, 2) if price else 0, "change": change,
-            "change_pct": change_pct, "volume": vol,
-            "market_cap": safe_float(getattr(info, 'market_cap', None)),
+            "change_pct": change_pct
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}

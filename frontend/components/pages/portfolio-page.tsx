@@ -94,11 +94,19 @@ export function PortfolioPage() {
 
   function saveStocks(s: StockHolding[]) {
     setStocks(s)
-    if (user) saveUserData(user.uid, "portfolio_stocks", s)
+    if (user) {
+      // Strip transient UI fields before saving to persistence
+      const persistent = s.map(({ symbol, qty, avg_price }) => ({ symbol, qty, avg_price }))
+      saveUserData(user.uid, "portfolio_stocks", persistent)
+    }
   }
   function saveMfs(m: MFHolding[]) {
     setMfs(m)
-    if (user) saveUserData(user.uid, "portfolio_mf", m)
+    if (user) {
+      // Strip transient UI fields before saving to persistence
+      const persistent = m.map(({ scheme_code, scheme_name, avg_price, units }) => ({ scheme_code, scheme_name, avg_price, units }))
+      saveUserData(user.uid, "portfolio_mf", persistent)
+    }
   }
 
 
@@ -190,8 +198,8 @@ export function PortfolioPage() {
   }
 
 
-  useEffect(() => { if (stocks.length > 0 && !stocks[0].ltp) fetchStockPrices() }, [stocks.length])
-  useEffect(() => { if (mfs.length > 0 && !mfs[0].nav) fetchMFNavs() }, [mfs.length])
+  useEffect(() => { if (stocks.length > 0) fetchStockPrices() }, [stocks.length])
+  useEffect(() => { if (mfs.length > 0) fetchMFNavs() }, [mfs.length])
 
 
   const stockInvested = stocks.reduce((s, h) => s + h.qty * h.avg_price, 0)

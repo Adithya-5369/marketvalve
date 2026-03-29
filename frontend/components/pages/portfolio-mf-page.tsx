@@ -62,7 +62,11 @@ export function PortfolioMFPage() {
 
   function saveMfs(m: MFHolding[]) {
     setMfs(m)
-    if (user) saveUserData(user.uid, "portfolio_mf", m)
+    if (user) {
+      // Core fields only
+      const persistent = m.map(({ scheme_code, scheme_name, avg_price, units }) => ({ scheme_code, scheme_name, avg_price, units }))
+      saveUserData(user.uid, "portfolio_mf", persistent)
+    }
   }
 
   async function searchMF() {
@@ -116,7 +120,7 @@ export function PortfolioMFPage() {
     setRefreshing(false)
   }
 
-  useEffect(() => { if (mfs.length > 0 && !mfs[0].nav) fetchMFNavs() }, [mfs.length])
+  useEffect(() => { if (mfs.length > 0) fetchMFNavs() }, [mfs.length])
 
   const totalInvested = mfs.reduce((s, m) => s + (m.units * m.avg_price), 0)
   const totalCurrent = mfs.reduce((s, m) => s + (m.current_value || (m.units * m.avg_price)), 0)
