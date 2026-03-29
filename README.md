@@ -1,7 +1,7 @@
 <p align="center">
   <h1 align="center">🚀 MarketValve - AI Investor Copilot</h1>
   <p align="center">
-    <strong>Next-Gen Financial Intelligence for Indian Retail Investors</strong><br/>
+    <strong>Next-Gen Financial Intelligence for Indian Investors</strong><br/>
     Built for the <strong>ET Gen AI Hackathon 2026</strong>
   </p>
   <p align="center">
@@ -173,6 +173,14 @@ marketvalve/
 │
 └── README.md                   # This file
 ```
+
+## ⚖️ Regulatory & SEBI Compliance Roadmap
+
+MarketValve is built as an educational prototype for the **ET Gen AI Hackathon**. Understanding the strict regulatory landscape of Indian fintech, we have designed our architecture with SEBI compliance in mind:
+
+* **White Box vs. Black Box:** To align with SEBI's latest algorithmic trading and AI guidelines, our Universe Scanner relies entirely on transparent, standard mathematical formulas (e.g., SMA 20/50 crossovers, RSI levels) rather than black-box proprietary logic.
+* **Descriptive vs. Prescriptive AI:** While the hackathon prototype may demonstrate signal routing using terms like "Buy/Sell" for clarity of logic flow, our production roadmap involves locking the Sarvam AI system prompts to strictly use descriptive technical vocabulary (e.g., "Bullish/Bearish momentum", "Overbought/Oversold"). 
+* **Disclaimer:** This platform is strictly for educational and demonstration purposes. We are not SEBI-registered Investment Advisers (RIA) or Research Analysts (RA). The AI outputs, sentiment analysis, and chart patterns do not constitute financial advice.
 
 ---
 
