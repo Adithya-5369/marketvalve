@@ -265,7 +265,10 @@ def fetch_market_news():
     for feed in NEWS_FEEDS:
         try:
             res = requests.get(feed, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-            soup = BeautifulSoup(res.content, "xml")
+            try:
+                soup = BeautifulSoup(res.content, "xml")
+            except:
+                soup = BeautifulSoup(res.content, "html.parser")
             
             source_name = "Moneycontrol" if "moneycontrol" in feed else "ET Markets"
             

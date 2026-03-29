@@ -19,7 +19,10 @@ def fetch_et_news(max_articles=50) -> list[dict]:
             res = requests.get(feed_url, timeout=10, headers={
                 "User-Agent": "Mozilla/5.0"
             })
-            soup = BeautifulSoup(res.content, "xml")
+            try:
+                soup = BeautifulSoup(res.content, "lxml-xml")
+            except:
+                soup = BeautifulSoup(res.content, "xml")
             items = soup.find_all("item")
             for item in items[:max_articles]:
                 title = item.find("title")
