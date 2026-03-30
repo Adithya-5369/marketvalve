@@ -31,7 +31,7 @@ NEWS_FEEDS = [
 
 def _get_sentiment_llm():
     return ChatOpenAI(
-        model="sarvam-m",
+        model="sarvam-30b",
         api_key=os.getenv("SARVAM_API_KEY"),
         base_url="https://api.sarvam.ai/v1",
         temperature=0,
