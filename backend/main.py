@@ -6,6 +6,7 @@ from agents.market_agent import run_agent
 import yfinance as yf
 import ta as ta_lib
 import numpy as np
+import math
 from tools.opportunity_radar import (
     fetch_nse_direct_deals, fetch_market_news, detect_signals,
     fetch_corporate_filings, fetch_insider_trades, fetch_quarterly_results,
@@ -574,7 +575,7 @@ async def scan_nse_universe(scope: str = "nifty200"):
             continue
 
 
-    return {
+    return _sanitize_floats({
         "date": datetime.now().strftime("%d %b %Y %H:%M"),
         "scope": index_name,
         "total_in_universe": len(tickers),
@@ -582,7 +583,18 @@ async def scan_nse_universe(scope: str = "nifty200"):
         "errors": errors,
         "total_alerts": len(alerts),
         "alerts": sorted(alerts, key=lambda x: len(x["signals"]), reverse=True),
-    }
+    })
+
+
+def _sanitize_floats(obj):
+    """Recursively replace NaN/Infinity floats with None for JSON safety."""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_floats(v) for v in obj]
+    return obj
 
 
 
