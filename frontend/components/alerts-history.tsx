@@ -27,7 +27,17 @@ export function AlertsHistory() {
         try {
           const res = await fetch(`${API_BASE_URL}/radar?stock=ALL`)
           const data = await res.json()
-          setSignals(data.signals || [])
+          const incoming = data.signals || []
+          if (isBackground && signals.length > 0) {
+            // Merge: add only new signals not already present
+            const existingTitles = new Set(signals.map(s => s.title))
+            const newSignals = incoming.filter((s: Signal) => !existingTitles.has(s.title))
+            if (newSignals.length > 0) {
+              setSignals(prev => [...newSignals, ...prev])
+            }
+          } else {
+            setSignals(incoming)
+          }
         } catch {
           if (!isBackground) setSignals([])
         } finally {
@@ -36,10 +46,6 @@ export function AlertsHistory() {
       }
 
       fetchSignals(false)
-
-      const intervalId = setInterval(() => fetchSignals(true), 60000)
-
-      return () => clearInterval(intervalId)
     }, [])
 
   function getSignalType(signals: string[]): string {
@@ -63,7 +69,7 @@ export function AlertsHistory() {
     <Card>
       <CardHeader>
         <CardTitle>AI Signal History</CardTitle>
-        <CardDescription>AI-detected sentiment signals from ET Markets & Moneycontrol</CardDescription>
+        <CardDescription>AI-detected sentiment signals from ET Markets</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border overflow-hidden">

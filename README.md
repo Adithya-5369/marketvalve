@@ -24,7 +24,7 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 
 - 🤖 **Multi-step AI reasoning** powered by Sarvam AI (Indian LLM)
 - 📊 **Live NSE market data** - prices, indices, bulk/block deals, insider trades, corporate filings
-- 🔍 **AI sentiment analysis** on ET Markets & Moneycontrol news articles
+- 🔍 **AI sentiment analysis** on ET Markets news articles
 - 📈 **Technical chart intelligence** - candlestick charts, RSI, MACD, Bollinger Bands, SMA crossovers
 - **Portfolio-aware AI** - personalized insights based on your holdings
 - **Source-cited responses** - every AI answer includes data provenance
@@ -47,8 +47,8 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 │                  BACKEND (FastAPI)                   │
 │  Hugging Face Spaces • Python 3.11 • Uvicorn        │
 ├───────────┬───────────┬───────────┬─────────────────┤
-│ Sarvam AI │ NSE India │  Yahoo    │  ET Markets &   │
-│  (LLM)    │  (Live)   │  Finance  │  Moneycontrol   │
+│ Sarvam AI │  NSE Live │   Yahoo   │   ET Markets    │
+│  (LLM)    │           │  Finance  │     (News)      │
 └───────────┴───────────┴───────────┴─────────────────┘
 ```
 
@@ -75,7 +75,7 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 - **Corporate filings** - board meetings, AGMs, announcements
 - **Quarterly results** - revenue, profit, EPS
 - **Management commentary** - investor presentations, earnings calls
-- **AI sentiment signals** from ET Markets & Moneycontrol news
+- **AI sentiment signals** from leading financial news (ET Markets)
 
 ### 📈 Chart Pattern Intelligence
 - Interactive **candlestick charts** via Plotly.js
@@ -116,7 +116,7 @@ MarketValve is a **full-stack AI investor copilot** that combines:
 | **AI Framework** | LangChain (tool calling) | Multi-step agent orchestration |
 | **RAG** | FAISS + HuggingFace Embeddings | News retrieval & context |
 | **Market Data** | NSE India API, Yahoo Finance | Live prices & historical data |
-| **News** | ET Markets, Moneycontrol | Sentiment analysis source |
+| **News** | ET Markets | Sentiment analysis source |
 | **Technical Analysis** | `ta` library (Python) | RSI, MACD, Bollinger, SMA |
 | **Mutual Funds** | MFAPI.in (free, no key) | NAV data for 40K+ schemes |
 | **Broker** | Angel One SmartAPI | Live portfolio import |
@@ -137,7 +137,7 @@ marketvalve/
 │   │   ├── price_fetch.py      # Live NSE price fetcher
 │   │   ├── opportunity_radar.py # Deals, filings, insider trades, sentiment
 │   │   ├── chart_pattern.py    # Technical analysis engine
-│   │   ├── new_rag.py          # News RAG (ET Markets + Moneycontrol)
+│   │   ├── new_rag.py          # News RAG (ET Markets)
 │   │   └── mutual_funds.py     # MF search, NAV, portfolio analysis
 │   └── rag/
 │       ├── news_fetcher.py     # Web scraping for financial news
@@ -326,7 +326,7 @@ User Query: "Full analysis of RELIANCE"
     ├── Step 1: price_fetch → Live price, change, volume
     ├── Step 2: chart_pattern → RSI, MACD, SMA analysis
     ├── Step 3: opportunity_radar → Bulk deals, insider trades, filings
-    ├── Step 4: news_rag → Latest ET Markets/Moneycontrol news
+    ├── Step 4: news_rag → Latest ET Markets news
     │
     └── Final Synthesis → Portfolio-aware response with source citations
 ```
@@ -337,7 +337,7 @@ User Query: "Full analysis of RELIANCE"
 | `price_fetch` | NSE India (via yfinance) | Live stock/index prices |
 | `chart_pattern` | Yahoo Finance + `ta` lib | Technical analysis with indicators |
 | `opportunity_radar` | NSE India (bulk deals, filings) | Institutional activity & corporate events |
-| `news_rag` | ET Markets + Moneycontrol | RAG-based news retrieval & AI sentiment |
+| `news_rag` | ET Markets | RAG-based news retrieval & AI sentiment |
 | `get_top_mutual_funds` | MFAPI.in | Mutual fund search & NAV data |
 
 ---

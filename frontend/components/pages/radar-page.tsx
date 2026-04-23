@@ -80,8 +80,22 @@ export function RadarPage({ initialStock }: { initialStock?: string }) {
       const res = await fetch(`${API_BASE_URL}/radar?stock=${stockParam}`)
       if (!res.ok) throw new Error("Failed to fetch")
       const data: RadarData = await res.json()
-      setRadarData(data)
-      setDeals(parseDealLines(data.nse_deals))
+      if (isBackground && radarData) {
+        // Merge: keep existing + add any new signals not already present
+        const existingTitles = new Set(radarData.signals.map(s => s.title))
+        const newSignals = (data.signals || []).filter(s => !existingTitles.has(s.title))
+        if (newSignals.length > 0 || data.nse_deals !== radarData.nse_deals) {
+          setRadarData({
+            ...data,
+            signals: [...newSignals, ...radarData.signals],
+            total_signals: radarData.signals.length + newSignals.length,
+          })
+          setDeals(parseDealLines(data.nse_deals))
+        }
+      } else {
+        setRadarData(data)
+        setDeals(parseDealLines(data.nse_deals))
+      }
       setLastRefresh(new Date())
     } catch {
       if (!isBackground) setError("Unable to fetch live data. Backend may be offline.")
@@ -92,8 +106,6 @@ export function RadarPage({ initialStock }: { initialStock?: string }) {
 
   useEffect(() => {
     fetchRadar(false)
-    const id = setInterval(() => fetchRadar(true), 60000)
-    return () => clearInterval(id)
   }, [stockFilter])
 
   const buyDeals = deals.filter(d => d.buySell?.toUpperCase().includes("B"))
@@ -106,7 +118,7 @@ export function RadarPage({ initialStock }: { initialStock?: string }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold tracking-tight">Opportunity Radar</h1>
           <CardDescription>
@@ -137,7 +149,7 @@ export function RadarPage({ initialStock }: { initialStock?: string }) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
         <Card><CardContent className="pt-4 pb-3 text-center">
           <div className="text-2xl font-bold">{deals.length}</div>
           <div className="text-xs text-muted-foreground mt-1">Deals</div>

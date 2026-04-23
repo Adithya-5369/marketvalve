@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -154,7 +154,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
       {/* Search Card */}
       <Card className="border-primary/10">
         <CardContent className="pt-6 space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -167,7 +167,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
             </div>
 
             {/* Period Pills */}
-            <div className="flex gap-1 bg-muted rounded-lg p-1">
+            <div className="flex gap-1 bg-muted rounded-lg p-1 overflow-x-auto">
               {periods.map(p => (
                 <button
                   key={p.value}
@@ -218,13 +218,22 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
       {/* Loading State */}
       {loading && (
         <Card className="border-primary/20">
-          <CardContent className="py-16 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+          <CardContent className="py-12 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 relative">
               <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+              <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
             </div>
             <p className="text-lg font-medium">Analyzing {ticker}...</p>
             <p className="text-sm text-muted-foreground mt-1">
               Fetching live NSE data, computing indicators, and running AI pattern detection
+            </p>
+            <div className="flex justify-center gap-6 mt-6 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5 animate-pulse"><Activity className="h-3.5 w-3.5 text-cyan-500" />Fetching OHLCV</span>
+              <span className="flex items-center gap-1.5 animate-pulse" style={{ animationDelay: '0.3s' }}><BarChart2 className="h-3.5 w-3.5 text-blue-500" />Computing RSI</span>
+              <span className="flex items-center gap-1.5 animate-pulse" style={{ animationDelay: '0.6s' }}><Zap className="h-3.5 w-3.5 text-amber-500" />AI Analysis</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground/60 italic mt-5 max-w-md mx-auto transition-opacity duration-500">
+              "The stock market is filled with individuals who know the price of everything, but the value of nothing." — Philip Fisher
             </p>
           </CardContent>
         </Card>

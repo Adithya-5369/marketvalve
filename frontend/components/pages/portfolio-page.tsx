@@ -196,28 +196,28 @@ export function PortfolioPage() {
   return (
     <div className="space-y-6 pb-32">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Portfolio</h1>
-        <p className="text-muted-foreground">Track your stocks & mutual funds with live P&L.</p>
+      <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Portfolio</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Track your stocks & mutual funds with live P&L.</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-5">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Invested</div>
-            <div className="text-xl font-bold mt-1">₹{totalInvested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">Total Invested</div>
+            <div className="text-lg sm:text-xl font-bold mt-1">₹{totalInvested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Current Value</div>
-            <div className="text-xl font-bold mt-1">₹{totalCurrent.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">Current Value</div>
+            <div className="text-lg sm:text-xl font-bold mt-1">₹{totalCurrent.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Total P&L</div>
-            <div className={`text-xl font-bold mt-1 flex items-center gap-1 ${totalPnl >= 0 ? "text-green-500" : "text-red-500"}`}>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">Total P&L</div>
+            <div className={`text-lg sm:text-xl font-bold mt-1 flex items-center gap-1 ${totalPnl >= 0 ? "text-green-500" : "text-red-500"}`}>
               {totalPnl >= 0 ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
               ₹{Math.abs(totalPnl).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
             </div>
@@ -225,8 +225,8 @@ export function PortfolioPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Returns</div>
-            <div className={`text-xl font-bold mt-1 ${totalPnlPct >= 0 ? "text-green-500" : "text-red-500"}`}>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">Returns</div>
+            <div className={`text-lg sm:text-xl font-bold mt-1 ${totalPnlPct >= 0 ? "text-green-500" : "text-red-500"}`}>
               {totalPnlPct >= 0 ? "+" : ""}{totalPnlPct.toFixed(2)}%
             </div>
           </CardContent>
@@ -254,14 +254,16 @@ export function PortfolioPage() {
           <Card>
             <CardContent className="pt-4">
               <div className="text-xs font-medium text-muted-foreground mb-2">Add Stock Holding</div>
-              <div className="flex items-center gap-2">
-                <Input placeholder="Symbol (e.g. TCS)" className="w-36" value={newSym} onChange={e => setNewSym(e.target.value)} />
-                <Input placeholder="Quantity" className="w-24" value={newQty} onChange={e => setNewQty(e.target.value)} />
-                <Input placeholder="Avg Price ₹" className="w-28" value={newAvg} onChange={e => setNewAvg(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addStock()} />
-                <Button size="sm" onClick={addStock} disabled={!newSym.trim()}>
-                  <Plus className="h-4 w-4 mr-1" /> Add
-                </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <Input placeholder="Symbol (e.g. TCS)" className="sm:w-36" value={newSym} onChange={e => setNewSym(e.target.value)} />
+                <div className="flex items-center gap-2">
+                  <Input placeholder="Quantity" className="flex-1 sm:w-24" value={newQty} onChange={e => setNewQty(e.target.value)} />
+                  <Input placeholder="Avg Price ₹" className="flex-1 sm:w-28" value={newAvg} onChange={e => setNewAvg(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addStock()} />
+                  <Button size="sm" onClick={addStock} disabled={!newSym.trim()} className="shrink-0">
+                    <Plus className="h-4 w-4 mr-1" /> Add
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -287,8 +289,8 @@ export function PortfolioPage() {
                             <span className="font-bold">{h.symbol}</span>
                             {h.ltp && <span className="text-sm text-muted-foreground">₹{h.ltp.toLocaleString()}</span>}
                           </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {h.qty} shares @ ₹{h.avg_price} • Invested: ₹{invested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                          <div className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+                            {h.qty} × ₹{h.avg_price} • ₹{invested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                           </div>
                         </div>
                         <div className="flex items-center gap-3">

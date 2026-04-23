@@ -38,6 +38,9 @@ export function AIFullPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [streamingText, setStreamingText] = useState("")
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [loadingQuote, setLoadingQuote] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
@@ -46,7 +49,22 @@ export function AIFullPage() {
   const [portfolio, setPortfolio] = useState<Holding[]>([])
   const [mfPortfolio, setMfPortfolio] = useState<MFHolding[]>([])
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages, loading])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages, loading, streamingText])
+
+  const LOADING_STEPS = [
+    { icon: "📡", text: "Fetching market data..." },
+    { icon: "🔍", text: "Processing signals..." },
+    { icon: "📊", text: "Analyzing trends..." },
+    { icon: "🧠", text: "Generating insights..." },
+    { icon: "✍️", text: "Preparing response..." },
+  ]
+
+  useEffect(() => {
+    if (!loading) { setLoadingQuote(0); return }
+    const id = setInterval(() => setLoadingQuote(q => Math.min(q + 1, LOADING_STEPS.length - 1)), 2500)
+    return () => clearInterval(id)
+  }, [loading])
+
   useEffect(() => {
     inputRef.current?.focus()
     // Load chat history
@@ -147,6 +165,18 @@ export function AIFullPage() {
       const r = await fetch(`${API_BASE_URL}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: msg, portfolio: fullPortfolio, history }) })
       const d = await r.json()
       const responseText = d.response?.trim() || "I apologize, but I couldn't generate a specific analysis for that query. Please try rephrasing or asking about a specific stock in your portfolio."
+      
+      // Typewriter streaming effect
+      setIsStreaming(true)
+      setStreamingText("")
+      setLoading(false)
+      const words = responseText.split(" ")
+      for (let i = 0; i < words.length; i++) {
+        await new Promise(r => setTimeout(r, 20))
+        setStreamingText(prev => prev + (i === 0 ? "" : " ") + words[i])
+      }
+      setIsStreaming(false)
+
       setMessages(prev => [...prev, { 
         role: "assistant", 
         content: responseText, 
@@ -154,6 +184,7 @@ export function AIFullPage() {
         reasoning_steps: d.reasoning_steps || [], 
         tools_used: d.tools_used || 0 
       }])
+      setStreamingText("")
     } catch { setMessages(prev => [...prev, { role: "assistant", content: "Unable to reach MarketValve API. Please check if the backend is running." }]) }
     finally { setLoading(false) }
   }
@@ -174,7 +205,7 @@ export function AIFullPage() {
 
       {/* Main Chat */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border shrink-0 bg-background">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-border shrink-0 bg-background">
           <div className="flex items-center gap-3">
             <MarketValveLogo className="w-7 h-7 shrink-0" />
             <div>
@@ -189,13 +220,13 @@ export function AIFullPage() {
           <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => { setMessages([]); if (user) localStorage.removeItem(`mv_chat_${user.uid}`) }}><RefreshCw className="h-3 w-3 mr-1.5" /> New Chat</Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto chat-scroll px-6 py-5">
+        <div className="flex-1 overflow-y-auto chat-scroll px-4 sm:px-6 py-5">
           {isEmpty ? (
             <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
               <MarketValveLogo className="w-14 h-14 mb-4 drop-shadow-sm" />
               <h2 className="text-2xl font-bold mb-2">What can I help you with?</h2>
               <p className="text-muted-foreground text-sm text-center mb-8 max-w-md">Multi-step stock analysis, mutual fund tracking, portfolio intelligence, and market signals • all with cited sources.</p>
-              <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
                 {SUGGESTIONS.map((s, i) => (
                   <button key={i} onClick={() => sendMessage(s.text)} className="group flex items-center gap-3 text-left px-4 py-3.5 rounded-xl border border-border bg-background hover:bg-muted hover:border-primary/30 hover:shadow-sm transition-all duration-200">
                     <div className="p-2 rounded-lg bg-muted group-hover:bg-background transition-colors">
@@ -217,7 +248,7 @@ export function AIFullPage() {
                 <div key={i} className="msg-enter">
                   <div className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                     {msg.role === "assistant" ? <MarketValveLogo className="w-8 h-8 shrink-0 mt-0.5" /> : <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 bg-muted border border-border"><span className="text-xs font-semibold">U</span></div>}
-                    <div className={`max-w-[80%] space-y-1 ${msg.role === "user" ? "items-end" : ""}`}>
+                    <div className={`max-w-[90%] sm:max-w-[80%] space-y-1 ${msg.role === "user" ? "items-end" : ""}`}>
                       <div className={`text-[10px] font-medium px-1 ${msg.role === "user" ? "text-right" : ""} text-muted-foreground`}>{msg.role === "assistant" ? "MarketValve AI" : "You"}{msg.tools_used && msg.tools_used > 0 ? ` • ${msg.tools_used} tools used` : ""}</div>
                       <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-muted/60 text-foreground border border-border/60 rounded-tl-sm"}`}>{renderContent(msg.content)}</div>
                     </div>
@@ -246,9 +277,25 @@ export function AIFullPage() {
                   <div className="space-y-1">
                     <div className="text-[10px] font-medium text-muted-foreground px-1">MarketValve AI</div>
                     <div className="rounded-2xl px-5 py-4 bg-muted/60 border border-border/60 rounded-tl-sm">
-                      <div className="text-[10px] text-muted-foreground mb-2.5 flex items-center gap-1.5"><Zap className="h-3 w-3 text-amber-500 animate-pulse" /> Analyzing with multi-step reasoning...</div>
+                      <div className="space-y-1.5 mb-3">
+                        {LOADING_STEPS.map((step, i) => (
+                          <div key={i} className={`flex items-center gap-2 text-[11px] transition-all duration-300 ${i < loadingQuote ? "text-green-500" : i === loadingQuote ? "text-foreground animate-pulse" : "text-muted-foreground/40"}`}>
+                            <span>{i < loadingQuote ? "✓" : step.icon}</span>
+                            <span>{step.text}</span>
+                          </div>
+                        ))}
+                      </div>
                       <div className="shimmer-bg h-3 w-48 rounded mb-1.5" /><div className="shimmer-bg h-3 w-36 rounded mb-1.5" /><div className="shimmer-bg h-3 w-52 rounded" />
                     </div>
+                  </div>
+                </div>
+              )}
+              {isStreaming && streamingText && (
+                <div className="msg-enter flex gap-3">
+                  <MarketValveLogo className="w-8 h-8 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-medium text-muted-foreground px-1">MarketValve AI</div>
+                    <div className="rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap bg-muted/60 text-foreground border border-border/60 rounded-tl-sm">{renderContent(streamingText)}<span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse" /></div>
                   </div>
                 </div>
               )}
@@ -260,8 +307,8 @@ export function AIFullPage() {
         <div className="shrink-0 px-6 py-4 border-t border-border bg-background/80 backdrop-blur-sm">
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center gap-3 rounded-2xl px-4 py-3 bg-muted/50 border border-border focus-within:border-primary/40 focus-within:shadow-sm focus-within:shadow-primary/10 transition-all duration-200">
-              <input ref={inputRef} className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none" placeholder="Ask about stocks, mutual funds, or market signals..." value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !loading && sendMessage()} disabled={loading} />
-              <Button size="icon" onClick={() => sendMessage()} disabled={loading || !input.trim()} className="shrink-0 h-9 w-9 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:shadow-md hover:shadow-primary/20 transition-all"><Send className="h-4 w-4" /></Button>
+              <input ref={inputRef} className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none" placeholder="Ask about stocks, mutual funds, or market signals..." value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !loading && !isStreaming && sendMessage()} disabled={loading || isStreaming} />
+              <Button size="icon" onClick={() => sendMessage()} disabled={loading || isStreaming || !input.trim()} className="shrink-0 h-9 w-9 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:shadow-md hover:shadow-primary/20 transition-all"><Send className="h-4 w-4" /></Button>
             </div>
             <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-muted-foreground"><span>Sarvam AI</span><span>•</span><span>NSE India</span><span>•</span><span>MFAPI</span><span>•</span><span>Yahoo Finance</span></div>
           </div>

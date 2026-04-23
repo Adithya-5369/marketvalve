@@ -11,8 +11,10 @@ from tools.opportunity_radar import (
     fetch_corporate_filings, fetch_insider_trades, fetch_quarterly_results,
     fetch_management_commentary
 )
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from tools.mutual_funds import search_mutual_funds, get_fund_nav, analyze_fund_portfolio
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 def safe_float(x):
     try:
@@ -162,6 +164,92 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "MarketValve API"}
+
+
+def _fetch_nse_market_status() -> dict | None:
+    """Query NSE's own marketStatus API for real-time trading state."""
+    try:
+        session = requests.Session(impersonate="chrome")
+        headers = {
+            "accept": "application/json, text/javascript, */*; q=0.01",
+            "referer": "https://www.nseindia.com",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
+        }
+        session.get("https://www.nseindia.com", headers=headers, timeout=10)
+        res = session.get(
+            "https://www.nseindia.com/api/marketStatus",
+            headers=headers,
+            timeout=10,
+        )
+        if res.status_code == 200:
+            data = res.json()
+            market_state = data.get("marketState", [])
+            # Find the "Capital Market" (equity) entry
+            for entry in market_state:
+                market = entry.get("market", "")
+                if "Capital" in market or "Equity" in market:
+                    status_text = entry.get("marketStatus", "").strip()
+                    trade_date = entry.get("tradeDate", "")
+                    is_open = status_text.lower() in (
+                        "open",
+                        "normal market open",
+                        "pre open",
+                        "pre-open",
+                    )
+                    reason = None
+                    if "close" in status_text.lower():
+                        reason = entry.get("marketStatusMessage", None)
+                    return {
+                        "is_open": is_open,
+                        "status": status_text,
+                        "trade_date": trade_date,
+                        "reason": reason,
+                    }
+    except Exception as e:
+        print(f"NSE marketStatus API error: {e}")
+    return None
+
+
+def _fallback_market_status() -> dict:
+    """Fallback: determine market status from IST time + weekday."""
+    now = datetime.now(IST)
+    day = now.weekday()  # 0=Mon … 6=Sun
+    hour, minute = now.hour, now.minute
+
+    is_weekend = day >= 5
+    minutes_since_midnight = hour * 60 + minute
+    market_open_min = 9 * 60 + 15   # 09:15
+    market_close_min = 15 * 60 + 30  # 15:30
+
+    is_live = (
+        not is_weekend
+        and market_open_min <= minutes_since_midnight <= market_close_min
+    )
+
+    if is_weekend:
+        reason = "Weekend"
+    elif minutes_since_midnight < market_open_min:
+        reason = "Pre-market"
+    elif minutes_since_midnight > market_close_min:
+        reason = "After hours"
+    else:
+        reason = None
+
+    return {
+        "is_open": is_live,
+        "status": "Open" if is_live else "Closed",
+        "trade_date": now.strftime("%d-%b-%Y"),
+        "reason": reason,
+    }
+
+
+@app.get("/market-status")
+async def get_market_status():
+    """Dynamic market status — queries NSE first, falls back to IST time check."""
+    nse = _fetch_nse_market_status()
+    result = nse if nse else _fallback_market_status()
+    result["timestamp"] = datetime.now(IST).isoformat()
+    return result
 
 def fetch_all_nifty50_live():
     """Fetches all 50 Nifty stocks in a single request from the NSE Index Tracker."""
@@ -400,7 +488,7 @@ async def scan_nse_universe(scope: str = "nifty200"):
     
 
     if not tickers:
-        print(f"NSE API failed for {index_name}, falling back to hardcoded Nifty 50")
+        print(f"NSE API failed for {index_name}, falling back to robust Nifty 50 defaults")
         tickers = [s["ticker"].replace(".NS", "") for s in NIFTY_STOCKS]
 
     alerts = []

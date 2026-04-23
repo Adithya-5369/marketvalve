@@ -54,7 +54,20 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
       const res = await fetch(`${API_BASE_URL}/radar?stock=${stockParam}`)
       if (!res.ok) throw new Error("Failed to fetch")
       const data: RadarData = await res.json()
-      setRadarData(data)
+      if (isBackground && radarData) {
+        // Merge: add only new signals not already present
+        const existingTitles = new Set(radarData.signals.map(s => s.title))
+        const newSignals = (data.signals || []).filter(s => !existingTitles.has(s.title))
+        if (newSignals.length > 0) {
+          setRadarData({
+            ...data,
+            signals: [...newSignals, ...radarData.signals],
+            total_signals: radarData.signals.length + newSignals.length,
+          })
+        }
+      } else {
+        setRadarData(data)
+      }
       setLastRefresh(new Date())
     } catch {
       if (!isBackground) setError("Unable to fetch live data. Backend may be offline.")
@@ -65,8 +78,6 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
 
   useEffect(() => {
     fetchSignals(false)
-    const id = setInterval(() => fetchSignals(true), 60000)
-    return () => clearInterval(id)
   }, [stockFilter])
 
   const signals = radarData?.signals || []
@@ -82,7 +93,7 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
             Market Signals
           </h1>
           <CardDescription className="flex items-center gap-1.5 pt-1">
-            AI-powered sentiment analysis from ET Markets & Moneycontrol • powered by Sarvam AI
+            AI-powered sentiment analysis from ET Markets • powered by Sarvam AI
           </CardDescription>
           {stockFilter && (
             <div className="flex items-center gap-2 mt-1">
@@ -169,7 +180,7 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
             <Newspaper className="h-12 w-12 mx-auto mb-4 opacity-20 text-muted-foreground" />
             <p className="font-medium text-base">No AI signals detected today</p>
             <p className="text-xs text-muted-foreground mt-2 max-w-md mx-auto">
-              Signals appear when Sarvam AI detects actionable patterns in ET Markets and Moneycontrol news articles.
+              Signals appear when Sarvam AI detects actionable patterns in ET Markets news articles.
             </p>
           </CardContent>
         </Card>

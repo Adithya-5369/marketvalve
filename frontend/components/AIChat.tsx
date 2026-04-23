@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "@/lib/api";
 import { MarketValveLogo } from "@/components/logo";
 import { Maximize2, Minimize2, ExternalLink, Briefcase, X, Send, Zap, Shield } from "lucide-react";
@@ -37,6 +37,9 @@ export default function AIChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasNew, setHasNew] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [loadingQuote, setLoadingQuote] = useState(0);
   const { user } = useAuth();
   
   const [portfolio, setPortfolio] = useState<any[]>([]);
@@ -62,7 +65,21 @@ export default function AIChat() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, streamingText]);
+
+  const LOADING_STEPS = [
+    { icon: "📡", text: "Fetching market data..." },
+    { icon: "🔍", text: "Processing signals..." },
+    { icon: "📊", text: "Analyzing trends..." },
+    { icon: "🧠", text: "Generating insights..." },
+    { icon: "✍️", text: "Preparing response..." },
+  ];
+
+  useEffect(() => {
+    if (!loading) { setLoadingQuote(0); return; }
+    const id = setInterval(() => setLoadingQuote(q => Math.min(q + 1, LOADING_STEPS.length - 1)), 2500);
+    return () => clearInterval(id);
+  }, [loading]);
 
   useEffect(() => {
     if (isOpen) {
@@ -158,6 +175,17 @@ export default function AIChat() {
       const data = await res.json();
       const responseText = data.response?.trim() || "I apologize, but I couldn't generate a specific analysis for that query. Please try rephrasing or asking about a specific stock in your portfolio.";
       
+      // Typewriter streaming effect
+      setIsStreaming(true);
+      setStreamingText("");
+      setLoading(false);
+      const words = responseText.split(" ");
+      for (let i = 0; i < words.length; i++) {
+        await new Promise(r => setTimeout(r, 25));
+        setStreamingText(prev => prev + (i === 0 ? "" : " ") + words[i]);
+      }
+      setIsStreaming(false);
+
       setMessages((prev) => [
         ...prev,
         {
@@ -168,6 +196,7 @@ export default function AIChat() {
           tools_used: data.tools_used || 0,
         },
       ]);
+      setStreamingText("");
       if (!isOpen) setHasNew(true);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Unable to reach MarketValve API. Please check if the backend is running." }]);
@@ -202,7 +231,7 @@ export default function AIChat() {
 
       {isOpen && (
         <div ref={panelRef} className={`chat-panel fixed z-50 flex flex-col rounded-2xl overflow-hidden bg-background border border-border shadow-2xl transition-all duration-300 ease-in-out ${
-          isExpanded ? "bottom-4 right-4 w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] md:bottom-12 md:right-12 md:w-[700px] md:h-[calc(100vh-6rem)]" 
+          isExpanded ? "inset-0 md:bottom-12 md:right-12 md:w-[700px] md:h-[calc(100vh-6rem)] md:rounded-2xl rounded-none" 
           : "bottom-24 right-6 w-[440px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-8rem)]"
         }`}>
           <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-border bg-muted/50">
@@ -252,9 +281,22 @@ export default function AIChat() {
               <div className="msg-bubble flex justify-start">
                 <MarketValveLogo className="w-6 h-6 rounded-md shrink-0 mr-2 mt-0.5" />
                 <div className="rounded-xl px-4 py-3 bg-muted border border-border rounded-bl-sm">
-                  <div className="text-[10px] text-muted-foreground mb-1 italic">Analyzing with multi-step reasoning...</div>
+                  <div className="space-y-1.5 mb-2">
+                    {LOADING_STEPS.map((step, i) => (
+                      <div key={i} className={`flex items-center gap-1.5 text-[10px] transition-all duration-300 ${i < loadingQuote ? "text-green-500" : i === loadingQuote ? "text-foreground animate-pulse" : "text-muted-foreground/40"}`}>
+                        <span>{i < loadingQuote ? "✓" : step.icon}</span>
+                        <span>{step.text}</span>
+                      </div>
+                    ))}
+                  </div>
                   <span className="chat-dot" /> <span className="chat-dot" /> <span className="chat-dot" />
                 </div>
+              </div>
+            )}
+            {isStreaming && streamingText && (
+              <div className="msg-bubble flex justify-start">
+                <MarketValveLogo className="w-6 h-6 rounded-md shrink-0 mr-2 mt-0.5" />
+                <div className="max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed break-words bg-muted text-foreground border border-border rounded-bl-sm">{renderContent(streamingText)}<span className="inline-block w-1.5 h-4 bg-primary/60 ml-0.5 animate-pulse" /></div>
               </div>
             )}
             {showSuggestions && !loading && (
@@ -268,8 +310,8 @@ export default function AIChat() {
 
           <div className="shrink-0 px-3 py-3 border-t border-border bg-background">
             <div className="flex items-center gap-2 rounded-xl px-3 py-2 bg-muted border border-border">
-              <input ref={inputRef} className="flex-1 bg-transparent text-sm text-foreground focus:outline-none" placeholder="Ask about any NSE stock..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && sendMessage()} disabled={loading} />
-              <button onClick={() => sendMessage()} disabled={loading || !input.trim()} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${input.trim() && !loading ? "bg-primary text-primary-foreground hover:scale-105" : "bg-muted-foreground/10 text-muted-foreground"}`}>
+              <input ref={inputRef} className="flex-1 bg-transparent text-sm text-foreground focus:outline-none" placeholder="Ask about any NSE stock..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && !loading && !isStreaming && sendMessage()} disabled={loading || isStreaming} />
+              <button onClick={() => sendMessage()} disabled={loading || isStreaming || !input.trim()} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${input.trim() && !loading && !isStreaming ? "bg-primary text-primary-foreground hover:scale-105" : "bg-muted-foreground/10 text-muted-foreground"}`}>
                 <Send className="w-4 h-4" />
               </button>
             </div>

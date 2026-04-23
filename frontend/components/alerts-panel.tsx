@@ -82,9 +82,23 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
         if (!res.ok) throw new Error("Failed to fetch")
         const data: RadarData = await res.json()
         
-        setRadarData(data)
-        setDeals(parseDealLines(data.nse_deals))
-    setLastRefresh(new Date())
+        if (isBackground && radarData) {
+          // Merge: add only new signals not already present
+          const existingTitles = new Set(radarData.signals.map(s => s.title))
+          const newSignals = (data.signals || []).filter(s => !existingTitles.has(s.title))
+          if (newSignals.length > 0 || data.nse_deals !== radarData.nse_deals) {
+            setRadarData({
+              ...data,
+              signals: [...newSignals, ...radarData.signals],
+              total_signals: radarData.signals.length + newSignals.length,
+            })
+            setDeals(parseDealLines(data.nse_deals))
+          }
+        } else {
+          setRadarData(data)
+          setDeals(parseDealLines(data.nse_deals))
+        }
+        setLastRefresh(new Date())
       } catch (e) {
         if (!isBackground) setError("Unable to fetch live data. Backend may be offline.")
       } finally {
@@ -94,10 +108,6 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
 
     useEffect(() => {
       fetchRadar(false)
-
-      const intervalId = setInterval(() => fetchRadar(true), 60000)
-
-      return () => clearInterval(intervalId)
     }, [])
 
   const buyDeals = deals.filter(d => d.buySell?.toUpperCase().includes("B"))
@@ -116,7 +126,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
             </Badge>
           </CardTitle>
           <CardDescription>
-            NSE bulk/block deals + Sarvam AI sentiment from ET Markets & Moneycontrol
+            NSE bulk/block deals + Sarvam AI sentiment from ET Markets
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -230,7 +240,7 @@ export function AlertsPanel({ fullWidth = false }: { fullWidth?: boolean }) {
           <div className="space-y-2">
             {(radarData?.signals || []).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
-                No AI signals detected in today's ET Markets & Moneycontrol news.
+                No AI signals detected in today's ET Markets news.
               </div>
             ) : (
               (radarData?.signals || []).map((signal, i) => (

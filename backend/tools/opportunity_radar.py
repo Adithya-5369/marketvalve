@@ -16,15 +16,10 @@ CACHE_FILE = os.path.join(os.path.dirname(__file__), "radar_cache.json")
 SENTIMENT_CACHE_FILE = os.path.join(os.path.dirname(__file__), "sentiment_cache.json")
 
 NEWS_FEEDS = [
-    # --- ET Markets ---
+    # --- ET Markets only ---
     "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms",
     "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
     "https://economictimes.indiatimes.com/opinion/et-commentary/rssfeeds/897228639.cms",
-    
-    # --- Moneycontrol ---
-    "https://www.moneycontrol.com/rss/MCtopnews.xml",
-    "https://www.moneycontrol.com/rss/marketreports.xml",
-    "https://www.moneycontrol.com/rss/brokerageresearch.xml",
 ]
 
 
@@ -255,12 +250,29 @@ def save_cache(articles):
     except:
         pass
 
+def _parse_pub_date(date_str: str) -> datetime | None:
+    """Try to parse an RSS pubDate string into a datetime."""
+    for fmt in (
+        "%a, %d %b %Y %H:%M:%S %z",
+        "%a, %d %b %Y %H:%M:%S %Z",
+        "%Y-%m-%dT%H:%M:%S%z",
+        "%d %b %Y %H:%M:%S",
+    ):
+        try:
+            return datetime.strptime(date_str.strip(), fmt)
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
 def fetch_market_news():
     cached = load_cache()
     if cached:
         return cached
         
     articles = []
+    seen_titles = set()  # Deduplicate by title
+    now = datetime.now()
     
     for feed in NEWS_FEEDS:
         try:
@@ -270,22 +282,39 @@ def fetch_market_news():
             except:
                 soup = BeautifulSoup(res.content, "html.parser")
             
-            source_name = "Moneycontrol" if "moneycontrol" in feed else "ET Markets"
-            
-            for item in soup.find_all("item")[:15]:
+            for item in soup.find_all("item")[:20]:
                 title   = item.find("title")
                 desc    = item.find("description")
                 link    = item.find("link")
                 date    = item.find("pubDate")
                 
-                if title:
-                    articles.append({
-                        "title": title.text.strip(),
-                        "desc":  (desc.text.strip() if desc else "")[:300],
-                        "link":  link.text.strip() if link else "",
-                        "date":  date.text.strip() if date else "",
-                        "source": source_name
-                    })
+                if not title:
+                    continue
+                    
+                title_text = title.text.strip()
+                
+                # Skip duplicates
+                if title_text.lower() in seen_titles:
+                    continue
+                seen_titles.add(title_text.lower())
+                
+                # Filter: only keep recent news (within 3 days)
+                date_text = date.text.strip() if date else ""
+                if date_text:
+                    pub_dt = _parse_pub_date(date_text)
+                    if pub_dt:
+                        # Make comparison timezone-naive
+                        pub_naive = pub_dt.replace(tzinfo=None) if pub_dt.tzinfo else pub_dt
+                        if (now - pub_naive).days > 3:
+                            continue
+                
+                articles.append({
+                    "title": title_text,
+                    "desc":  (desc.text.strip() if desc else "")[:300],
+                    "link":  link.text.strip() if link else "",
+                    "date":  date_text,
+                    "source": "ET Markets"
+                })
         except Exception as e:
             print(f"Feed error {feed}: {e}")
             
@@ -634,7 +663,7 @@ def opportunity_radar(query: str) -> str:
     """
     Comprehensive investment signal scanner for Indian markets.
     Scans: NSE bulk/block deals, corporate filings, insider/promoter trades,
-    quarterly results, and AI sentiment from ET Markets & Moneycontrol news.
+    quarterly results, and AI sentiment from ET Markets news.
     Detects: FII/DII activity, bulk deals, block deals, insider trades,
     corporate announcements, earnings, analyst upgrades/downgrades, breakouts.
     Use for: institutional activity, bulk/block deals, insider trading, filings,
@@ -699,7 +728,7 @@ def opportunity_radar(query: str) -> str:
             
         elif not direct_result and not filings and not insider and not results:
             output += f"No signals found for {query_upper} today.\n"
-            output += f"Scanned {len(articles)} articles from ET Markets & Moneycontrol.\n"
+            output += f"Scanned {len(articles)} articles from ET Markets.\n"
 
         return output
 

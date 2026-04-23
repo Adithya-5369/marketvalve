@@ -124,6 +124,7 @@ export function Header() {
   const initials = displayName?.[0]?.toUpperCase() || "U"
 
   return (
+    <>
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
       <div className="hidden md:block md:w-64 md:flex-none" />
       <div className="hidden md:flex md:flex-1 md:items-center md:gap-4 lg:gap-8">
@@ -222,8 +223,11 @@ export function Header() {
           </DropdownMenu>
         </nav>
       </div>
-      <div className="flex md:hidden">
-        <nav className="flex items-center gap-3">
+      <div className="flex md:hidden ml-auto">
+        <nav className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => { const el = document.getElementById('mobile-search-wrapper'); if (el) el.classList.toggle('hidden'); }}>
+            <Search className="h-4 w-4" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
@@ -251,5 +255,44 @@ export function Header() {
         </nav>
       </div>
     </header>
+    {/* Mobile Search Bar */}
+    <div id="mobile-search-wrapper" className="hidden md:hidden sticky top-14 z-20 border-b bg-background px-4 py-2">
+      <div className="relative" ref={wrapperRef}>
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Search stocks..."
+          className="w-full appearance-none bg-background pl-8 shadow-none"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setShowResults(true); setSelectedIdx(-1) }}
+          onFocus={() => query.trim() && setShowResults(true)}
+          onKeyDown={handleKeyDown}
+        />
+        {showResults && (filtered.length > 0 || (query.trim() && !filtered.some(s => s === query.trim().toUpperCase()))) && (
+          <div className="absolute top-full left-0 mt-1 w-full bg-background border border-border rounded-xl shadow-2xl z-50 overflow-hidden max-h-[420px] overflow-y-auto">
+            {filtered.map((stock) => (
+              <div key={stock}>
+                <div className="px-3 pt-3 pb-1.5 flex items-center gap-2">
+                  <TrendingUp className="h-3 w-3 text-primary" />
+                  <span className="text-sm font-semibold">{stock}</span>
+                  <span className="text-[10px] text-muted-foreground">NSE</span>
+                </div>
+                {getStockActions(stock).map((act, j) => (
+                  <button key={j} className="w-full flex items-center gap-3 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors"
+                    onClick={() => { act.action(); document.getElementById('mobile-search-wrapper')?.classList.add('hidden'); }}>
+                    <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0 ml-4">{act.icon}</div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-xs">{act.label}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{act.sub}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+    </>
   )
 }
