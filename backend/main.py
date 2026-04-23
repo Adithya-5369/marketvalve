@@ -408,14 +408,25 @@ async def get_chart_data(ticker: str, period: str = "3mo"):
 
         dates = df.index.strftime("%Y-%m-%d").tolist()
 
-        return {
+        closes = [safe_float(x) for x in df['Close']]
+        # Compute last price & change from available close data
+        valid_closes = [c for c in closes if c is not None]
+        last_price = valid_closes[-1] if valid_closes else 0
+        prev_price = valid_closes[-2] if len(valid_closes) > 1 else last_price
+        price_change = round(last_price - prev_price, 2) if last_price and prev_price else 0
+        pct_change = round((price_change / prev_price) * 100, 2) if prev_price else 0
+
+        return _sanitize_floats({
             "ticker": clean,
             "dates": dates,
+            "lastPrice": last_price,
+            "change": price_change,
+            "changePct": pct_change,
             "ohlc": {
                 "open":  [safe_float(x) for x in df['Open']],
                 "high":  [safe_float(x) for x in df['High']],
                 "low":   [safe_float(x) for x in df['Low']],
-                "close": [safe_float(x) for x in df['Close']],
+                "close": closes,
             },
             "volume": [safe_int(x) for x in df['Volume']],
             "sma20":  [safe_float(x) for x in df['SMA_20'].tolist()],
@@ -423,7 +434,7 @@ async def get_chart_data(ticker: str, period: str = "3mo"):
             "bb_upper": [safe_float(x) for x in df['BBU_20'].tolist()],
             "bb_lower": [safe_float(x) for x in df['BBL_20'].tolist()],
             "rsi": [safe_float(x) for x in df['RSI_14'].tolist()],
-        }
+        })
     except Exception as e:
         return {"error": str(e)}
 

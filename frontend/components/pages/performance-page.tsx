@@ -28,6 +28,9 @@ const QUICK_STOCKS = [
 type ChartData = {
   ticker: string
   dates: string[]
+  lastPrice: number
+  change: number
+  changePct: number
   ohlc: { open: number[], high: number[], low: number[], close: number[] }
   volume: number[]
   sma20: number[]
@@ -99,22 +102,25 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
   ]
 
 
-  const lastClose = chartData?.ohlc.close.at(-1)
-  const prevClose = chartData?.ohlc.close.at(-2)
-  const priceChange = lastClose && prevClose ? lastClose - prevClose : 0
-  const pctChange = prevClose ? (priceChange / prevClose) * 100 : 0
+  // Use server-computed price data (null-safe, no NaN issues)
+  const lastClose = chartData?.lastPrice ?? 0
+  const priceChange = chartData?.change ?? 0
+  const pctChange = chartData?.changePct ?? 0
   const isUp = priceChange >= 0
 
-  const lastRSI = chartData?.rsi.at(-1)
+  const lastRSI = chartData?.rsi.filter(v => v != null).at(-1)
   const rsiSignal = lastRSI ? (lastRSI > 70 ? "Overbought" : lastRSI < 30 ? "Oversold" : "Neutral") : "—"
   const rsiColor = rsiSignal === "Overbought" ? "text-red-500" : rsiSignal === "Oversold" ? "text-green-500" : "text-muted-foreground"
 
-  const sma20_last = chartData?.sma20.at(-1)
-  const sma50_last = chartData?.sma50.at(-1)
+  const sma20_last = chartData?.sma20.filter(v => v != null).at(-1)
+  const sma50_last = chartData?.sma50.filter(v => v != null).at(-1)
 
-  const dayHigh = chartData ? Math.max(...chartData.ohlc.high) : 0
-  const dayLow = chartData ? Math.min(...chartData.ohlc.low.filter(v => v > 0)) : 0
-  const avgVolume = chartData ? (chartData.volume.reduce((a, b) => a + b, 0) / chartData.volume.length) : 0
+  const validHighs = chartData?.ohlc.high.filter(v => v != null && v > 0) ?? []
+  const validLows = chartData?.ohlc.low.filter(v => v != null && v > 0) ?? []
+  const validVols = chartData?.volume.filter(v => v != null && v > 0) ?? []
+  const dayHigh = validHighs.length ? Math.max(...validHighs) : 0
+  const dayLow = validLows.length ? Math.min(...validLows) : 0
+  const avgVolume = validVols.length ? (validVols.reduce((a, b) => a + b, 0) / validVols.length) : 0
 
 
   let signal = "HOLD"
@@ -256,7 +262,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground mb-1">Last Price</p>
               <p className="text-2xl font-bold tracking-tight">
-                ₹{lastClose?.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{lastClose.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <div className={`flex items-center gap-1 mt-1 text-sm font-medium ${isUp ? "text-green-500" : "text-red-500"}`}>
                 {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
@@ -293,7 +299,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-muted-foreground">₹{dayLow.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
                   <span className="font-semibold text-foreground text-sm">
-                    ₹{lastClose?.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                    ₹{lastClose.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                   </span>
                   <span className="text-muted-foreground">₹{dayHigh.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
                 </div>
