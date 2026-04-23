@@ -92,34 +92,34 @@ export function WatchlistAlerts() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0 pb-3">
         <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
             <BellRing className="h-5 w-5 text-primary" /> Price Alerts
           </CardTitle>
-          <CardDescription>
-            {alerts.length} alerts set • {triggeredCount > 0 && (
-              <span className="text-amber-500 font-medium">{triggeredCount} triggered!</span>
+          <CardDescription className="text-xs sm:text-sm">
+            {alerts.length} alerts set {triggeredCount > 0 && (
+              <span>• <span className="text-amber-500 font-medium">{triggeredCount} triggered!</span></span>
             )}
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={checkAlerts} disabled={checking || alerts.length === 0}>
+        <Button variant="outline" size="sm" onClick={checkAlerts} disabled={checking || alerts.length === 0} className="w-full sm:w-auto">
           <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${checking ? "animate-spin" : ""}`} /> Check Now
         </Button>
       </CardHeader>
       <CardContent>
 
-        <div className="flex items-center gap-2 mb-4 p-3 rounded-lg border border-dashed border-border">
-          <Input placeholder="Symbol" className="w-28" value={newSymbol} onChange={e => setNewSymbol(e.target.value)} />
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 rounded-lg border border-dashed border-border">
+          <Input placeholder="Symbol" className="flex-1 min-w-[100px] sm:w-28 sm:flex-none" value={newSymbol} onChange={e => setNewSymbol(e.target.value)} />
           <select
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+            className="flex-1 min-w-[120px] sm:min-w-0 sm:w-auto h-9 rounded-md border border-border bg-background px-3 text-sm"
             value={newCondition} onChange={e => setNewCondition(e.target.value as "above" | "below")}>
             <option value="above">Goes Above</option>
             <option value="below">Goes Below</option>
           </select>
-          <Input placeholder="₹ Target" className="w-28" value={newTarget} onChange={e => setNewTarget(e.target.value)}
+          <Input placeholder="₹ Target" className="flex-1 min-w-[100px] sm:w-28 sm:flex-none" value={newTarget} onChange={e => setNewTarget(e.target.value)}
             onKeyDown={e => e.key === "Enter" && addAlert()} />
-          <Button size="sm" onClick={addAlert} disabled={!newSymbol.trim() || !newTarget.trim()}>
+          <Button size="sm" onClick={addAlert} disabled={!newSymbol.trim() || !newTarget.trim()} className="w-full sm:w-auto mt-2 sm:mt-0">
             <Plus className="h-4 w-4 mr-1" /> Add Alert
           </Button>
         </div>
@@ -139,7 +139,7 @@ export function WatchlistAlerts() {
                 : null
 
               return (
-                <div key={alert.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                <div key={alert.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border transition-colors gap-3 sm:gap-0 ${
                   alert.triggered ? "border-amber-500/50 bg-amber-500/5" : "border-border hover:bg-muted/50"
                 }`}>
                   <div className="space-y-1">
@@ -154,8 +154,8 @@ export function WatchlistAlerts() {
                       <span className="font-semibold text-foreground">₹{alert.target.toLocaleString()}</span>
                     </div>
                   </div>
-                  <div className="text-right flex items-center gap-3">
-                    <div>
+                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                    <div className="text-left sm:text-right">
                       {alert.currentPrice ? (
                         <>
                           <div className="text-sm font-medium">₹{alert.currentPrice.toLocaleString()}</div>
@@ -169,7 +169,7 @@ export function WatchlistAlerts() {
                         <span className="text-xs text-muted-foreground">checking...</span>
                       )}
                     </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeAlert(alert.id)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeAlert(alert.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>

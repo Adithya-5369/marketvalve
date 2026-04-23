@@ -82,14 +82,16 @@ export function PortfolioStocksPage() {
 
   return (
     <div className="space-y-6 pb-32">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Stock Portfolio</h1>
-          <p className="text-muted-foreground">Track your NSE stock holdings with live P&L.</p>
+          <p className="text-muted-foreground text-sm sm:text-base">Track your NSE stock holdings with live P&L.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => fetchPrices()} disabled={refreshing || stocks.length === 0}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => fetchPrices()} disabled={refreshing || stocks.length === 0}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -123,12 +125,12 @@ export function PortfolioStocksPage() {
       <Card>
         <CardContent className="pt-4">
           <div className="text-xs font-medium text-muted-foreground mb-2">Add Stock Holding</div>
-          <div className="flex items-center gap-2 mb-3">
-            <Input placeholder="Symbol (e.g. TCS)" className="w-36" value={newSym} onChange={e => setNewSym(e.target.value)} />
-            <Input placeholder="Quantity" className="w-24" value={newQty} onChange={e => setNewQty(e.target.value)} />
-            <Input placeholder="Avg Price ₹" className="w-28" value={newAvg} onChange={e => setNewAvg(e.target.value)}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <Input placeholder="Symbol (e.g. TCS)" className="flex-1 min-w-[120px] sm:w-36 sm:flex-none" value={newSym} onChange={e => setNewSym(e.target.value)} />
+            <Input placeholder="Quantity" className="w-[80px] sm:w-24 flex-1 sm:flex-none" value={newQty} onChange={e => setNewQty(e.target.value)} />
+            <Input placeholder="Avg Price ₹" className="flex-1 min-w-[100px] sm:w-28 sm:flex-none" value={newAvg} onChange={e => setNewAvg(e.target.value)}
               onKeyDown={e => e.key === "Enter" && addStock()} />
-            <Button size="sm" onClick={addStock} disabled={!newSym.trim()}>
+            <Button size="sm" onClick={addStock} disabled={!newSym.trim()} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-1" /> Add
             </Button>
           </div>
@@ -156,26 +158,26 @@ export function PortfolioStocksPage() {
             return (
               <Card key={i}>
                 <CardContent className="py-4 px-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm">{h.symbol}</span>
-                        {h.ltp && <span className="text-xs text-muted-foreground">₹{h.ltp.toLocaleString()}</span>}
+                  <div className="flex flex-row items-center justify-between gap-2">
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm truncate">{h.symbol}</span>
+                        {h.ltp && <span className="text-xs text-muted-foreground whitespace-nowrap">₹{h.ltp.toLocaleString()}</span>}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {h.qty} shares @ ₹{h.avg_price} • Invested: ₹{invested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                      <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                        {h.qty} shares @ ₹{h.avg_price} <br className="sm:hidden" /> <span className="hidden sm:inline">•</span> Invested: ₹{invested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                       <div className="text-right">
                         <div className="text-sm font-semibold">₹{current.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</div>
                         {h.pnl !== undefined && (
-                          <div className={`text-xs font-medium ${h.pnl >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          <div className={`text-[10px] sm:text-xs font-medium ${h.pnl >= 0 ? "text-green-500" : "text-red-500"}`}>
                             {h.pnl >= 0 ? "+" : ""}₹{h.pnl.toLocaleString()} ({h.pnl_pct?.toFixed(2)}%)
                           </div>
                         )}
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
                         onClick={() => saveStocks(stocks.filter((_, j) => j !== i))}>
                         <Trash2 className="h-4 w-4" />
                       </Button>

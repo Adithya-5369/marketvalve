@@ -87,12 +87,12 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold tracking-tight">
             Market Signals
           </h1>
-          <CardDescription className="flex items-center gap-1.5 pt-1">
+          <CardDescription className="flex flex-wrap items-center gap-1.5 pt-1">
             AI-powered sentiment analysis from ET Markets • powered by Sarvam AI
           </CardDescription>
           {stockFilter && (
@@ -106,11 +106,9 @@ export function AlertsPage({ initialStock }: { initialStock?: string }) {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right hidden sm:block">
-            <div className="text-xs text-muted-foreground">
-              {isMounted ? `Updated ${lastRefresh.toLocaleTimeString()}` : "Updating..."}
-            </div>
+        <div className="flex items-center justify-between sm:justify-end gap-3">
+          <div className="text-left sm:text-right text-xs text-muted-foreground sm:block">
+            {isMounted ? `Updated ${lastRefresh.toLocaleTimeString()}` : "Updating..."}
           </div>
           <Button variant="outline" size="icon" onClick={() => fetchSignals(false)} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
