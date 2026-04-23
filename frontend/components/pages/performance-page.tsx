@@ -59,6 +59,14 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
     }
   }, [initialStock])
 
+  // Re-fetch when period changes (only if a stock is already loaded)
+  useEffect(() => {
+    if (ticker && chartData) {
+      analyzeStock(ticker)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period])
+
   async function analyzeStock(stock: string) {
     const t = (stock || ticker).toUpperCase().replace(".NS", "")
     if (!t) return
@@ -464,7 +472,8 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
                   yaxis: "y2",
                   marker: {
                     color: chartData.ohlc.close.map((c, i) =>
-                      i > 0 && c >= chartData.ohlc.close[i - 1] ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"
+                      i > 0 && c != null && chartData.ohlc.close[i - 1] != null && c >= chartData.ohlc.close[i - 1]
+                        ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"
                     ),
                   },
                 },
@@ -494,7 +503,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
                   side: "left",
                   showgrid: false,
                   showticklabels: false,
-                  range: [0, Math.max(...chartData.volume) * 4],
+                  range: [0, (Math.max(...chartData.volume.filter(v => v != null && v > 0)) || 1) * 4],
                 },
                 legend: {
                   orientation: "h",
@@ -517,7 +526,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
             />
 
             {/* RSI Sub-Chart */}
-            {chartData.rsi.length > 0 && (
+            {chartData.rsi.filter(v => v != null).length > 0 && (
               <div className="mt-1 border-t border-border/50 pt-1">
                 <div className="flex justify-between items-center px-4 py-1">
                   <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -542,7 +551,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
                     },
                     {
                       type: "scatter",
-                      x: [chartData.dates[0], chartData.dates.at(-1)],
+                      x: [chartData.dates[0], chartData.dates[chartData.dates.length - 1]],
                       y: [70, 70],
                       mode: "lines",
                       line: { color: "rgba(239,68,68,0.4)", width: 1, dash: "dash" },
@@ -551,7 +560,7 @@ export function PerformancePage({ initialStock }: { initialStock?: string }) {
                     },
                     {
                       type: "scatter",
-                      x: [chartData.dates[0], chartData.dates.at(-1)],
+                      x: [chartData.dates[0], chartData.dates[chartData.dates.length - 1]],
                       y: [30, 30],
                       mode: "lines",
                       line: { color: "rgba(34,197,94,0.4)", width: 1, dash: "dash" },

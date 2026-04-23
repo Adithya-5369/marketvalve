@@ -19,7 +19,8 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 def safe_float(x):
     try:
-        return float(x) if x == x else None  # NaN check
+        v = float(x)
+        return v if math.isfinite(v) else None
     except:
         return None
 
@@ -60,6 +61,10 @@ def fetch_nse_quote(symbol: str):
                 "status": "success",
                 "symbol": symbol.upper(),
                 "price": price_info.get("lastPrice", 0),
+                "close": price_info.get("close", 0),
+                "open": price_info.get("open", 0),
+                "high": price_info.get("intraDayHighLow", {}).get("max", 0),
+                "low": price_info.get("intraDayHighLow", {}).get("min", 0),
                 "change": price_info.get("change", 0),
                 "change_pct": price_info.get("pChange", 0),
                 "volume": data.get("securityWiseDP", {}).get("quantityTraded", 0)
@@ -394,11 +399,49 @@ def fetch_all_indices_live():
 async def get_chart_data(ticker: str, period: str = "3mo"):
     """Fetch historical chart data with technical indicators."""
     try:
+        import pandas as pd
         clean = ticker.upper().replace(".NS", "")
         stock = yf.Ticker(f"{clean}.NS")
         df = stock.history(period=period)
         if df.empty:
             return {"error": "No data found"}
+            
+        # Try live NSE quote for accurate current price
+        live = fetch_nse_quote(clean)
+        if live and live.get("status") == "success" and live.get("price"):
+            nse_last = float(live["price"] or 0)
+            nse_close = float(live.get("close") or 0)
+            # Official close if > 0 (market closed), else LTP (market open)
+            best_close = nse_close if nse_close > 0 else nse_last
+            nse_open = float(live.get("open") or best_close)
+            nse_high = float(live.get("high") or best_close)
+            nse_low = float(live.get("low") or best_close)
+            nse_vol = safe_int(live.get("volume", 0))
+
+            today_date = datetime.now(IST).date()
+            last_date_in_df = df.index[-1].date()
+
+            if last_date_in_df != today_date:
+                # Appending fresh candle for today if missing (stale yfinance data)
+                today_str = datetime.now(IST).strftime("%Y-%m-%d")
+                new_idx = pd.Timestamp(today_str, tz=df.index.tzinfo)
+                new_row = pd.DataFrame({
+                    'Open': [nse_open],
+                    'High': [nse_high],
+                    'Low': [nse_low],
+                    'Close': [best_close],
+                    'Volume': [nse_vol]
+                }, index=[new_idx])
+                df = pd.concat([df, new_row])
+            else:
+                # Updating the current day's candle with live NSE data
+                df.iloc[-1, df.columns.get_loc('Open')] = nse_open
+                df.iloc[-1, df.columns.get_loc('High')] = nse_high
+                df.iloc[-1, df.columns.get_loc('Low')] = nse_low
+                df.iloc[-1, df.columns.get_loc('Close')] = best_close
+                if nse_vol > 0:
+                    df.iloc[-1, df.columns.get_loc('Volume')] = max(df.iloc[-1, df.columns.get_loc('Volume')], nse_vol)
+
         df['SMA_20'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=20).sma_indicator()
         df['SMA_50'] = ta_lib.trend.SMAIndicator(close=df['Close'], window=50).sma_indicator()
         bb = ta_lib.volatility.BollingerBands(close=df['Close'], window=20)
@@ -409,12 +452,12 @@ async def get_chart_data(ticker: str, period: str = "3mo"):
         dates = df.index.strftime("%Y-%m-%d").tolist()
 
         closes = [safe_float(x) for x in df['Close']]
-        # Compute last price & change from available close data
         valid_closes = [c for c in closes if c is not None]
         last_price = valid_closes[-1] if valid_closes else 0
-        prev_price = valid_closes[-2] if len(valid_closes) > 1 else last_price
-        price_change = round(last_price - prev_price, 2) if last_price and prev_price else 0
-        pct_change = round((price_change / prev_price) * 100, 2) if prev_price else 0
+        prev_close = valid_closes[-2] if len(valid_closes) > 1 else last_price
+        
+        price_change = round(last_price - prev_close, 2) if last_price and prev_close else 0
+        pct_change = round((price_change / prev_close) * 100, 2) if prev_close else 0
 
         return _sanitize_floats({
             "ticker": clean,
